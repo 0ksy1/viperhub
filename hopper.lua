@@ -338,7 +338,7 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 local petPanel = Instance.new("Frame")
-petPanel.Size = UDim2.new(0, 200, 0, 200)
+petPanel.Size = UDim2.new(0, 200, 0, 155)
 petPanel.Position = UDim2.new(1, 10, 0, 0)
 petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 petPanel.Visible = false
