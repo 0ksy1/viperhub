@@ -1,4 +1,4 @@
--- made by viper
+-- made by viper 
 
 repeat wait() until game:IsLoaded()
 repeat wait() until game.Players.LocalPlayer and game.Players.LocalPlayer:FindFirstChild("PlayerGui")
@@ -53,7 +53,7 @@ else
 	writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
 end
 
--- UI 
+-- UI
 local gui = Instance.new("ScreenGui")
 gui.Name = "ServerHopGui"
 gui.ResetOnSpawn = false
@@ -80,6 +80,68 @@ title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextColor3 = Color3.fromRGB(240, 230, 255)
+
+local serverIdButton = Instance.new("TextButton", frame)
+serverIdButton.Size = UDim2.new(0, 32, 0, 32)
+serverIdButton.Position = UDim2.new(1, -96, 0, 2)
+serverIdButton.Text = "🆔"
+serverIdButton.BackgroundColor3 = Color3.fromRGB(70, 0, 140)
+serverIdButton.TextColor3 = Color3.new(1, 1, 1)
+serverIdButton.Font = Enum.Font.GothamBold
+serverIdButton.TextSize = 16
+Instance.new("UICorner", serverIdButton).CornerRadius = UDim.new(0, 8)
+
+local closeButton = Instance.new("TextButton", frame)
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -32, 0, 2)
+closeButton.Text = "✖"
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 20
+closeButton.BackgroundColor3 = Color3.fromRGB(120, 0, 180)
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
+closeButton.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+local idFrame = Instance.new("Frame", gui)
+idFrame.Size = UDim2.new(0, 360, 0, 120)
+idFrame.Position = UDim2.new(0.5, -180, 0.7, 0)
+idFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
+idFrame.Visible = false
+Instance.new("UICorner", idFrame)
+
+local idLabel = Instance.new("TextLabel", idFrame)
+idLabel.Size = UDim2.new(1, -20, 0.6, 0)
+idLabel.Position = UDim2.new(0, 10, 0, 10)
+idLabel.BackgroundTransparency = 1
+idLabel.TextColor3 = Color3.new(1, 1, 1)
+idLabel.Font = Enum.Font.Gotham
+idLabel.TextSize = 14
+idLabel.TextWrapped = true
+idLabel.Text = "Server ID: \n" .. game.JobId
+
+local copyBtn = Instance.new("TextButton", idFrame)
+copyBtn.Size = UDim2.new(0.5, 0, 0.2, 0)
+copyBtn.Position = UDim2.new(0.25, 0, 0.75, 0)
+copyBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 255)
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 14
+copyBtn.Text = "Copy"
+Instance.new("UICorner", copyBtn)
+
+copyBtn.MouseButton1Click:Connect(function()
+	setclipboard(game.JobId)
+	copyBtn.Text = "Copied!"
+	task.wait(1.5)
+	copyBtn.Text = "Copy"
+end)
+
+serverIdButton.MouseButton1Click:Connect(function()
+	idFrame.Visible = not idFrame.Visible
+end)
+
 
 local petToggle = Instance.new("TextButton", frame)
 petToggle.Size = UDim2.new(0, 32, 0, 32)
