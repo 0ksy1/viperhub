@@ -8,6 +8,17 @@ local LocalPlayer = Players.LocalPlayer
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local lp = Players.LocalPlayer
+local char = lp.Character or lp.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local humanoid = char:WaitForChild("Humanoid")
+
+
+local speedMultiplier = 1.4 -- 
+local toggled = true
+
 
 local PlaceID = game.PlaceId
 local AllIDs = {}
@@ -22,6 +33,25 @@ local petsToFind = {
 	["La Grande Combinasion"] = true,
 	["Tralalero Tralala"] = true
 }
+
+RunService.RenderStepped:Connect(function(dt)
+	if not toggled then return end
+	if humanoid.MoveDirection.Magnitude > 0 then
+		-- Двигаем игрока вручную вперёд по MoveDirection
+		local moveDir = humanoid.MoveDirection.Unit
+		local delta = moveDir * humanoid.WalkSpeed * (speedMultiplier - 1) * dt
+		hrp.CFrame = hrp.CFrame + delta
+	end
+end)
+
+
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		toggled = not toggled
+		print("⚙️ SpeedHack " .. (toggled and "включён" or "выключен"))
+	end
+end)
 
 local function loadPetSettings()
 	local success, result = pcall(function()
