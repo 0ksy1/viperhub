@@ -17,7 +17,7 @@ local humanoid = char:WaitForChild("Humanoid")
 
 
 local speedMultiplier = 1.4 -- 
-local toggled = true
+local toggled = false
 
 
 local PlaceID = game.PlaceId
