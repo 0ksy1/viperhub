@@ -36,8 +36,7 @@ local petsToFind = {
 
 RunService.RenderStepped:Connect(function(dt)
 	if not toggled then return end
-	if humanoid.MoveDirection.Magnitude > 0 then
-		-- Двигаем игрока вручную вперёд по MoveDirection
+	if humanoid.MoveDirection.Magnitude > 0 then	
 		local moveDir = humanoid.MoveDirection.Unit
 		local delta = moveDir * humanoid.WalkSpeed * (speedMultiplier - 1) * dt
 		hrp.CFrame = hrp.CFrame + delta
@@ -92,9 +91,9 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 360)
+frame.Size = UDim2.new(0, 360, 0, 400)
 frame.Position = UDim2.new(0.5, -200, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 12, 40)
+frame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 frame.Active = true
@@ -115,7 +114,7 @@ local serverIdButton = Instance.new("TextButton", frame)
 serverIdButton.Size = UDim2.new(0, 32, 0, 32)
 serverIdButton.Position = UDim2.new(1, -96, 0, 2)
 serverIdButton.Text = "💠"
-serverIdButton.BackgroundColor3 = Color3.fromRGB(70, 0, 140)
+serverIdButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
 serverIdButton.TextColor3 = Color3.new(1, 1, 1)
 serverIdButton.Font = Enum.Font.GothamBold
 serverIdButton.TextSize = 16
@@ -127,7 +126,7 @@ closeButton.Position = UDim2.new(1, -32, 0, 2)
 closeButton.Text = "✖"
 closeButton.Font = Enum.Font.GothamBold
 closeButton.TextSize = 20
-closeButton.BackgroundColor3 = Color3.fromRGB(120, 0, 180)
+closeButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
 closeButton.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
 closeButton.MouseButton1Click:Connect(function()
@@ -137,7 +136,7 @@ end)
 local idFrame = Instance.new("Frame", gui)
 idFrame.Size = UDim2.new(0, 360, 0, 120)
 idFrame.Position = UDim2.new(0.5, -180, 0.7, 0)
-idFrame.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
+idFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 idFrame.Visible = false
 Instance.new("UICorner", idFrame)
 
@@ -177,7 +176,7 @@ local petToggle = Instance.new("TextButton", frame)
 petToggle.Size = UDim2.new(0, 32, 0, 32)
 petToggle.Position = UDim2.new(1, -64, 0, 2)
 petToggle.Text = "⚙️"
-petToggle.BackgroundColor3 = Color3.fromRGB(90, 0, 160)
+petToggle.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
 petToggle.TextColor3 = Color3.new(1,1,1)
 petToggle.Font = Enum.Font.GothamBold
 petToggle.TextSize = 16
@@ -215,7 +214,7 @@ petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
 petResultLabel.TextWrapped = true
 petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
 petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(180, 200, 255)
+petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 petResultLabel.Font = Enum.Font.Gotham
 petResultLabel.TextSize = 20
 
@@ -339,9 +338,9 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 local petPanel = Instance.new("Frame")
-petPanel.Size = UDim2.new(0, 160, 0, 140)
+petPanel.Size = UDim2.new(0, 200, 0, 200)
 petPanel.Position = UDim2.new(1, 10, 0, 0)
-petPanel.BackgroundColor3 = Color3.fromRGB(40, 0, 70)
+petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 petPanel.Visible = false
 petPanel.Parent = frame
 Instance.new("UICorner", petPanel).CornerRadius = UDim.new(0, 10)
@@ -351,7 +350,7 @@ for name, state in pairs(petsToFind) do
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -10, 0, 24)
 	btn.Position = UDim2.new(0, 5, 0, y)
-	btn.Text = (state and "✔️ " or "❌ ") .. name
+	btn.Text = (state and "✅ " or "❌ ") .. name
 	btn.TextColor3 = Color3.new(1, 1, 1)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
