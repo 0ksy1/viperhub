@@ -15,10 +15,8 @@ local char = lp.Character or lp.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
 
-
-local speedMultiplier = 1.4 -- 
+local speedMultiplier = 1.4
 local toggled = false
-
 
 local PlaceID = game.PlaceId
 local AllIDs = {}
@@ -43,12 +41,11 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
-
 UIS.InputBegan:Connect(function(input, gpe)
 	if gpe then return end
 	if input.KeyCode == Enum.KeyCode.V then
 		toggled = not toggled
-		print("⚙️ SpeedHack " .. (toggled and "включён" or "выключен"))
+		print("⚙️ SpeedHack " .. (toggled and "on" or "off"))
 	end
 end)
 
@@ -82,29 +79,95 @@ else
 	writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
 end
 
--- UI
+-- GUI BASE
 local gui = Instance.new("ScreenGui")
+local frame = Instance.new("Frame")
+local stroke = Instance.new("UIStroke")
+
+-- GUI Settings
 gui.Name = "ServerHopGui"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 360, 0, 400)
-frame.Position = UDim2.new(0.5, -200, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
+frame.Position = UDim2.new(0.5, -180, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(12, 12, 24)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 frame.Active = true
 frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
+stroke.Parent = frame
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(120, 0, 200)
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+-- PURCHASE BUTTON TOGGLE
+local purchaseButton = Instance.new("TextButton", frame)
+purchaseButton.Size = UDim2.new(0, 32, 0, 32)
+purchaseButton.Position = UDim2.new(0, 4, 0, 2)
+purchaseButton.Text = "🛒"
+purchaseButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
+purchaseButton.TextColor3 = Color3.new(1, 1, 1)
+purchaseButton.Font = Enum.Font.GothamBold
+purchaseButton.TextSize = 16
+Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
+
+-- PURCHASE PANEL
+local purchasePanel = Instance.new("Frame")
+purchasePanel.Size = UDim2.new(0, 240, 0, 140)
+purchasePanel.Position = UDim2.new(0.5, -120, 0.5, -70)
+purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
+purchasePanel.Visible = false
+purchasePanel.Parent = gui
+Instance.new("UICorner", purchasePanel).CornerRadius = UDim.new(0, 12)
+local stroke2 = Instance.new("UIStroke", purchasePanel)
+stroke2.Color = Color3.fromRGB(150, 50, 255)
+stroke2.Thickness = 1.5
+
+local purchases = {
+	{ Name = "Medusa's Head", Icon = "🤢" },
+	{ Name = "Invisibility Cloak", Icon = "🧥" },
+	{ Name = "Quantum Cloner", Icon = "🧪" }
+}
+
+for i, item in ipairs(purchases) do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -20, 0, 36)
+	btn.Position = UDim2.new(0, 10, 0, (i - 1) * 44 + 10)
+	btn.Text = item.Icon .. "  " .. item.Name
+	btn.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	btn.Parent = purchasePanel
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+	btn.MouseButton1Click:Connect(function()
+		print("🛒 Покупка: " .. item.Name)
+		local args = { item.Name }
+		pcall(function()
+			game:GetService("ReplicatedStorage")
+				:WaitForChild("Packages")
+				:WaitForChild("Net")
+				:WaitForChild("RF/CoinsShopService/RequestBuy")
+				:InvokeServer(unpack(args))
+		end)
+	end)
+end
+
+purchaseButton.MouseButton1Click:Connect(function()
+	purchasePanel.Visible = not purchasePanel.Visible
+end)
+
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.3"
+title.Text = "😈  Server Hopper v1.31"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
