@@ -91,7 +91,7 @@ gui.IgnoreGuiInset = true
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-frame.Size = UDim2.new(0, 360, 0, 400)
+frame.Size = UDim2.new(0, 340, 0, 400)
 frame.Position = UDim2.new(0.5, -180, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(12, 12, 24)
 frame.BorderSizePixel = 0
@@ -104,6 +104,16 @@ stroke.Parent = frame
 stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(120, 0, 200)
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+-- RGB-подсветка обводки основного окна
+-- 🌈 RGB-подсветка stroke
+spawn(function()
+	while frame and frame.Parent do
+		local hue = tick() % 5 / 5
+		stroke.Color = Color3.fromHSV(hue, 1, 1)
+		wait(0.1)
+	end
+end)
+
 
 -- PURCHASE BUTTON TOGGLE
 local purchaseButton = Instance.new("TextButton", frame)
@@ -324,7 +334,7 @@ end
 spawn(function()
 	while true do
 		scanForPets()
-		wait(5)
+		wait(3)
 	end
 end)
 
