@@ -14,8 +14,13 @@ local lp = Players.LocalPlayer
 local char = lp.Character or lp.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local skyY = 230        
+local dropDistance = 50 
 
-local speedMultiplier = 1.4
+local speedMultiplier = 2.5
 local toggled = false
 
 local PlaceID = game.PlaceId
@@ -128,7 +133,7 @@ Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
 
 -- PURCHASE PANEL
 local purchasePanel = Instance.new("Frame")
-purchasePanel.Size = UDim2.new(0, 240, 0, 140)
+purchasePanel.Size = UDim2.new(0, 240, 0, 190)
 purchasePanel.Position = UDim2.new(0.5, -120, 0.5, -70)
 purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
 purchasePanel.Visible = false
@@ -141,7 +146,8 @@ stroke2.Thickness = 1.5
 local purchases = {
 	{ Name = "Medusa's Head", Icon = "🤢" },
 	{ Name = "Invisibility Cloak", Icon = "🧥" },
-	{ Name = "Quantum Cloner", Icon = "🧪" }
+	{ Name = "Quantum Cloner", Icon = "🧪" },
+	{ Name = "Grapple Hook", Icon = "🖤" }
 }
 
 for i, item in ipairs(purchases) do
@@ -445,4 +451,24 @@ end)
 
 frame:GetPropertyChangedSignal("Position"):Connect(function()
 	petPanel.Position = UDim2.new(1, 10, 0, 0)
+end)
+
+local function teleportToSky()
+  hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
+  print("skyrise")
+end
+
+local function stepOffSkyPlatform()
+  local currentY = hrp.Position.Y
+  hrp.CFrame = CFrame.new(hrp.Position.X, currentY - dropDistance, hrp.Position.Z)
+  print("⏬skyfall")
+end
+
+UIS.InputBegan:Connect(function(input, gpe)
+  if gpe then return end
+  if input.KeyCode == Enum.KeyCode.X then
+    teleportToSky()
+  elseif input.KeyCode == Enum.KeyCode.Z then
+    stepOffSkyPlatform()
+  end
 end)
