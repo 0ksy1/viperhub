@@ -109,8 +109,7 @@ stroke.Parent = frame
 stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(120, 0, 200)
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
--- RGB-подсветка обводки основного окна
--- 🌈 RGB-подсветка stroke
+
 spawn(function()
 	while frame and frame.Parent do
 		local hue = tick() % 5 / 5
@@ -134,10 +133,10 @@ Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
 -- PURCHASE PANEL
 local purchasePanel = Instance.new("Frame")
 purchasePanel.Size = UDim2.new(0, 240, 0, 190)
-purchasePanel.Position = UDim2.new(0.5, -120, 0.5, -70)
+purchasePanel.Position = UDim2.new(0.5, -420, 0.5, -170)
 purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
 purchasePanel.Visible = false
-purchasePanel.Parent = gui
+purchasePanel.Parent = frame
 Instance.new("UICorner", purchasePanel).CornerRadius = UDim.new(0, 12)
 local stroke2 = Instance.new("UIStroke", purchasePanel)
 stroke2.Color = Color3.fromRGB(150, 50, 255)
@@ -163,7 +162,7 @@ for i, item in ipairs(purchases) do
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
 
 	btn.MouseButton1Click:Connect(function()
-		print("🛒 Покупка: " .. item.Name)
+		print("🛒 purchase: " .. item.Name)
 		local args = { item.Name }
 		pcall(function()
 			game:GetService("ReplicatedStorage")
@@ -183,7 +182,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.31"
+title.Text = "😈  Server Hopper v1.4"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -214,10 +213,14 @@ end)
 
 local idFrame = Instance.new("Frame", gui)
 idFrame.Size = UDim2.new(0, 360, 0, 120)
-idFrame.Position = UDim2.new(0.5, -180, 0.7, 0)
+idFrame.Position = UDim2.new(0.5, -180, 0.7, 150)
 idFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 idFrame.Visible = false
+idFrame.Parent = frame
 Instance.new("UICorner", idFrame)
+local stroke5 = Instance.new("UIStroke", idFrame)
+stroke5.Color = Color3.fromRGB(150, 50, 255)
+stroke5.Thickness = 1.5
 
 local idLabel = Instance.new("TextLabel", idFrame)
 idLabel.Size = UDim2.new(1, -20, 0.6, 0)
@@ -228,6 +231,16 @@ idLabel.Font = Enum.Font.Gotham
 idLabel.TextSize = 14
 idLabel.TextWrapped = true
 idLabel.Text = "Server ID: \n" .. game.JobId
+
+local tutorL = Instance.new("TextLabel", idFrame)
+tutorL.Size = UDim2.new(1, -20, 0.6, 0)
+tutorL.Position = UDim2.new(0, 0, 0, -25)
+tutorL.BackgroundTransparency = 1
+tutorL.TextColor3 = Color3.new(1, 1, 1)
+tutorL.Font = Enum.Font.Gotham
+tutorL.TextSize = 14
+tutorL.TextWrapped = true
+tutorL.Text = "🔍V-Speed | X-SkyRise | Z-SkyFall" 
 
 local copyBtn = Instance.new("TextButton", idFrame)
 copyBtn.Size = UDim2.new(0.5, 0, 0.2, 0)
@@ -261,6 +274,7 @@ petToggle.Font = Enum.Font.GothamBold
 petToggle.TextSize = 16
 Instance.new("UICorner", petToggle).CornerRadius = UDim.new(0, 8)
 
+
 local closeButton = Instance.new("TextButton", frame)
 closeButton.Size = UDim2.new(0, 32, 0, 32)
 closeButton.Position = UDim2.new(1, -32, 0, 2)
@@ -280,7 +294,7 @@ statusLabel.Position = UDim2.new(0, 10, 0, 40)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.TextWrapped = true
-statusLabel.Text = "🔍V-Speed | X-SkyRise | Z-SkyFall"
+statusLabel.Text = "🔍Waiting for Start"
 statusLabel.TextColor3 = Color3.fromRGB(230, 230, 255)
 statusLabel.Font = Enum.Font.GothamMedium
 statusLabel.TextSize = 20
@@ -423,6 +437,9 @@ petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 petPanel.Visible = false
 petPanel.Parent = frame
 Instance.new("UICorner", petPanel).CornerRadius = UDim.new(0, 10)
+local stroke6 = Instance.new("UIStroke", petPanel)
+stroke6.Color = Color3.fromRGB(150, 50, 255)
+stroke6.Thickness = 1.5
 
 local y = 10
 for name, state in pairs(petsToFind) do
