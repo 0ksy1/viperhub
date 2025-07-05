@@ -184,7 +184,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.41"
+title.Text = "😈  Server Hopper v1.4"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -325,33 +325,47 @@ end
 
 local function scanForPets()
 	local found = {}
+	local alreadyTagged = {}
+
 	for _, obj in pairs(Workspace:GetDescendants()) do
-		if petsToFind[obj.Name] then
-			if not obj:FindFirstChild("PetTag") then
-				local tag = Instance.new("BillboardGui", obj)
-				tag.Name = "PetTag"
-				tag.Size = UDim2.new(0, 100, 0, 40)
-				tag.AlwaysOnTop = true
-				tag.StudsOffset = Vector3.new(0, 3, 0)
-				local label = Instance.new("TextLabel", tag)
-				label.Size = UDim2.new(1, 0, 1, 0)
-				label.BackgroundTransparency = 1
-				label.TextColor3 = Color3.new(1, 1, 1)
-				label.TextStrokeTransparency = 0.5
-				label.TextScaled = true
-				label.Font = Enum.Font.GothamBold
-				label.Text = obj.Name
-				pulseRGB(label)
+		if petsToFind[obj.Name] and obj:IsA("Model") then
+			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
+
+			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
+				local pos = root.Position
+				if pos.Magnitude < 5000 then 
+					if not obj:FindFirstChild("PetTag") then
+						local tag = Instance.new("BillboardGui", obj)
+						tag.Name = "PetTag"
+						tag.Size = UDim2.new(0, 100, 0, 40)
+						tag.AlwaysOnTop = true
+						tag.StudsOffset = Vector3.new(0, 3, 0)
+
+						local label = Instance.new("TextLabel", tag)
+						label.Size = UDim2.new(1, 0, 1, 0)
+						label.BackgroundTransparency = 1
+						label.TextColor3 = Color3.new(1, 1, 1)
+						label.TextStrokeTransparency = 0.5
+						label.TextScaled = true
+						label.Font = Enum.Font.GothamBold
+						label.Text = obj.Name
+						pulseRGB(label)
+					end
+					table.insert(found, obj.Name)
+					alreadyTagged[obj] = true
+				end
 			end
-			table.insert(found, obj.Name)
 		end
 	end
+
 	if #found > 0 then
 		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(found, "\n")
 	else
 		petResultLabel.Text = "❌ Found pets: none"
 	end
 end
+
+
 
 spawn(function()
 	while true do
