@@ -19,6 +19,11 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local skyY = 230        
 local dropDistance = 50 
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local espInvisEnabled = false
+local espAllEnabled = false
 
 local speedMultiplier = 2.5
 local toggled = false
@@ -543,5 +548,101 @@ UIS.InputBegan:Connect(function(input, gpe)
     teleportToSky()
   elseif input.KeyCode == Enum.KeyCode.Z then
     stepOffSkyPlatform()
+  end
+end)
+
+local function createESP(char, tag)
+  if not char:FindFirstChild(tag) then
+    local highlight = Instance.new("Highlight")
+    highlight.Name = tag
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = char
+    highlight.Parent = char
+  end
+end
+
+local function removeESP(char, tag)
+  local esp = char:FindFirstChild(tag)
+  if esp then esp:Destroy() end
+end
+
+local function createMarker(root)
+  if not root:FindFirstChild("AntiInvisMarker") then
+    local marker = Instance.new("BillboardGui")
+    marker.Name = "AntiInvisMarker"
+    marker.Adornee = root
+    marker.Size = UDim2.new(0, 100, 0, 40)
+    marker.AlwaysOnTop = true
+    marker.StudsOffset = Vector3.new(0, 3, 0)
+    marker.Parent = root
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "👻 Hidden Player"
+    label.TextColor3 = Color3.new(1, 0, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = marker
+  end
+end
+
+local function removeMarker(root)
+  local m = root:FindFirstChild("AntiInvisMarker")
+  if m then m:Destroy() end
+end
+
+local function isInvisible(char)
+  for _, part in pairs(char:GetDescendants()) do
+    if part:IsA("BasePart") and part.Transparency < 0.98 and part.Name ~= "HumanoidRootPart" then
+      return false
+    end
+  end
+  return true
+end
+
+local function updateESP()
+  for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+      local char = player.Character
+      if char and char:IsDescendantOf(workspace) then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local invis = isInvisible(char)
+
+        if espAllEnabled then
+          createESP(char, "ESP_All")
+        else
+          removeESP(char, "ESP_All")
+        end
+
+        if espInvisEnabled and invis then
+          createESP(char, "ESP_Invis")
+          if root then createMarker(root) end
+        else
+          removeESP(char, "ESP_Invis")
+          if root then removeMarker(root) end
+        end
+      end
+    end
+  end
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+  if gpe then return end
+  if input.KeyCode == Enum.KeyCode.Q then
+    espInvisEnabled = not espInvisEnabled
+    print("👻 ESP Invisibles: " .. (espInvisEnabled and "ON" or "OFF"))
+  elseif input.KeyCode == Enum.KeyCode.E then
+    espAllEnabled = not espAllEnabled
+    print("🧍 ESP All Players: " .. (espAllEnabled and "ON" or "OFF"))
+  end
+end)
+
+RunService.Stepped:Connect(function()
+  if espInvisEnabled or espAllEnabled then
+    updateESP()
   end
 end)
