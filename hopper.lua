@@ -42,14 +42,17 @@ local petsToFind = {
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" 
+local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" -- 🔁 ВСТАВЬ СВОЙ WEBHOOK СЮДА
 
 local function sendWebhook(foundPets)
 	if webhookUrl == "" or #foundPets == 0 then return end
 	local data = {
-		["content"] = "**🔔 Pets Found:**\n" .. table.concat(foundPets, "\n") .. "\n\n🌐 Server ID: `" .. game.JobId .. "`",
-		["username"] = "Pet Scanner",
-	}
+	["content"] = "**🔔 Pets Found:**\n" ..
+		table.concat(foundPets, "\n") ..
+		"\n\n👤 Player: `" .. Players.LocalPlayer.Name .. "`" ..
+		"\n🌐 Server ID: `" .. game.JobId .. "`",
+	["username"] = "Pet Scanner"
+    }
 	local json = HttpService:JSONEncode(data)
 	sendH00K = true
 	local request = (syn and syn.request) or (http and http.request) or http_request or request
