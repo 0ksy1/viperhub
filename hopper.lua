@@ -171,7 +171,7 @@ Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
 
 -- PURCHASE PANEL
 local purchasePanel = Instance.new("Frame")
-purchasePanel.Size = UDim2.new(0, 240, 0, 190)
+purchasePanel.Size = UDim2.new(0, 240, 0, 230)
 purchasePanel.Position = UDim2.new(0.5, -420, 0.5, -170)
 purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
 purchasePanel.Visible = false
@@ -185,7 +185,8 @@ local purchases = {
 	{ Name = "Medusa's Head", Icon = "🤢" },
 	{ Name = "Invisibility Cloak", Icon = "🧥" },
 	{ Name = "Quantum Cloner", Icon = "🧪" },
-	{ Name = "Grapple Hook", Icon = "🖤" }
+	{ Name = "Grapple Hook", Icon = "🖤" },
+	{ Name = "Boogie Bomb", Icon = "🤩" }
 }
 
 for i, item in ipairs(purchases) do
@@ -221,7 +222,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.43"
+title.Text = "😈  Server Hopper v1.44"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
