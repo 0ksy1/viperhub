@@ -30,11 +30,13 @@ local actualHour = os.date("!*t").hour
 local isRunning = false
 
 local petsToFind = {
-	["Graipuss Medussi"] = true,
-	["Los Tralaleritos"] = true,
+	["Tralalero Tralala"] = true,
 	["La Vacca Saturno Saturnita"] = true,
+	["Sammyni Spyderini"] = true,
+	["Los Tralaleritos"] = true,
+	["Graipuss Medussi"] = true,
 	["La Grande Combinasion"] = true,
-	["Tralalero Tralala"] = true
+	["Garama and Madundung"] = true
 }
 
 RunService.RenderStepped:Connect(function(dt)
@@ -182,7 +184,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.4"
+title.Text = "😈  Server Hopper v1.41"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -431,7 +433,7 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 local petPanel = Instance.new("Frame")
-petPanel.Size = UDim2.new(0, 200, 0, 155)
+petPanel.Size = UDim2.new(0, 200, 0, 210)
 petPanel.Position = UDim2.new(1, 10, 0, 0)
 petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
 petPanel.Visible = false
