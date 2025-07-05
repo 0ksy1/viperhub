@@ -39,6 +39,35 @@ local petsToFind = {
 	["Garama and Madundung"] = true
 }
 
+local HttpService = game:GetService("HttpService")
+
+local sendedHOOK = false
+local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" 
+
+local function sendWebhook(foundPets)
+	if webhookUrl == "" or #foundPets == 0 then return end
+	local data = {
+		["content"] = "**🔔 Pets Found:**\n" .. table.concat(foundPets, "\n") .. "\n\n🌐 Server ID: `" .. game.JobId .. "`",
+		["username"] = "Pet Scanner",
+	}
+	local json = HttpService:JSONEncode(data)
+	sendH00K = true
+	local request = (syn and syn.request) or (http and http.request) or http_request or request
+	if request then
+		pcall(function()
+			request({
+				Url = webhookUrl,
+				Method = "POST",
+				Headers = {["Content-Type"] = "application/json"},
+				Body = json
+			})
+		end)
+	end
+end
+
+
+
+
 RunService.RenderStepped:Connect(function(dt)
 	if not toggled then return end
 	if humanoid.MoveDirection.Magnitude > 0 then	
@@ -360,6 +389,11 @@ local function scanForPets()
 
 	if #found > 0 then
 		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(found, "\n")
+        if not sendedHOOK then
+			sendWebhook(found)
+			sendedHOOK = true
+		end
+		
 	else
 		petResultLabel.Text = "❌ Found pets: none"
 	end
