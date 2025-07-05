@@ -216,7 +216,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.4"
+title.Text = "😈  Server Hopper v1.42"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -356,13 +356,12 @@ local function pulseRGB(obj)
 end
 
 local function scanForPets()
-	local found = {}
+	local foundCount = {}  
 	local alreadyTagged = {}
 
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if petsToFind[obj.Name] and obj:IsA("Model") then
 			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				local pos = root.Position
 				if pos.Magnitude < 5000 then 
@@ -383,25 +382,29 @@ local function scanForPets()
 						label.Text = obj.Name
 						pulseRGB(label)
 					end
-					table.insert(found, obj.Name)
+
+					foundCount[obj.Name] = (foundCount[obj.Name] or 0) + 1
 					alreadyTagged[obj] = true
 				end
 			end
 		end
 	end
 
-	if #found > 0 then
-		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(found, "\n")
-        if not sendedHOOK then
-			sendWebhook(found)
+	if next(foundCount) then
+		local displayLines = {}
+		for name, count in pairs(foundCount) do
+			table.insert(displayLines, name .. " (x" .. count .. ")")
+		end
+		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
+
+		if not sendedHOOK then
+			sendWebhook(displayLines)
 			sendedHOOK = true
 		end
-		
 	else
 		petResultLabel.Text = "❌ Found pets: none"
 	end
 end
-
 
 
 spawn(function()
