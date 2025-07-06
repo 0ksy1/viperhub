@@ -1,649 +1,114 @@
--- made by viper 
-
-repeat wait() until game:IsLoaded()
-repeat wait() until game.Players.LocalPlayer and game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local lp = Players.LocalPlayer
-local char = lp.Character or lp.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
-local humanoid = char:WaitForChild("Humanoid")
-local UIS = game:GetService("UserInputService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local skyY = 230        
-local dropDistance = 50 
-local UserInputService = game:GetService("UserInputService")
+local correctKey = "viper2025"
+local scriptURL = "https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/main"
+local keyFile = "viper_key.txt"
 
-local LocalPlayer = Players.LocalPlayer
-local espInvisEnabled = false
-local espAllEnabled = false
-
-local speedMultiplier = 2.5
-local toggled = false
-
-local PlaceID = game.PlaceId
-local AllIDs = {}
-local foundAnything = ""
-local actualHour = os.date("!*t").hour
-local isRunning = false
-
-local petsToFind = {
-	["Tralalero Tralala"] = true,
-	["La Vacca Saturno Saturnita"] = true,
-	["Sammyni Spyderini"] = true,
-	["Los Tralaleritos"] = true,
-	["Graipuss Medussi"] = true,
-	["La Grande Combinasion"] = true,
-	["Garama and Madundung"] = true
-}
-
-local HttpService = game:GetService("HttpService")
-
-local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" -- 🔁 ВСТАВЬ СВОЙ WEBHOOK СЮДА
-
-local function sendWebhook(foundPets)
-	if webhookUrl == "" or #foundPets == 0 then return end
-	local data = {
-	["content"] = "**🔔 Pets Found:**\n" ..
-		table.concat(foundPets, "\n") ..
-		"\n\n👤 Player: `" .. Players.LocalPlayer.Name .. "`" ..
-		"\n🌐 Server ID: `" .. game.JobId .. "`",
-	["username"] = "Pet Scanner"
-    }
-	local json = HttpService:JSONEncode(data)
-	sendH00K = true
-	local request = (syn and syn.request) or (http and http.request) or http_request or request
-	if request then
-		pcall(function()
-			request({
-				Url = webhookUrl,
-				Method = "POST",
-				Headers = {["Content-Type"] = "application/json"},
-				Body = json
-			})
-		end)
-	end
+local function isValidKey(k)
+	return k == correctKey
 end
 
-
-
-
-RunService.RenderStepped:Connect(function(dt)
-	if not toggled then return end
-	if humanoid.MoveDirection.Magnitude > 0 then	
-		local moveDir = humanoid.MoveDirection.Unit
-		local delta = moveDir * humanoid.WalkSpeed * (speedMultiplier - 1) * dt
-		hrp.CFrame = hrp.CFrame + delta
-	end
-end)
-
-UIS.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if input.KeyCode == Enum.KeyCode.V then
-		toggled = not toggled
-		print("⚙️ SpeedHack " .. (toggled and "on" or "off"))
-	end
-end)
-
-local function loadPetSettings()
-	local success, result = pcall(function()
-		return HttpService:JSONDecode(readfile("PetFinderSettings.json"))
+local function saveKey(k)
+	pcall(function()
+		writefile(keyFile, k)
 	end)
-	if success and typeof(result) == "table" then
-		for name, state in pairs(result) do
-			if petsToFind[name] ~= nil then
-				petsToFind[name] = state
-			end
+end
+
+local function loadSavedKey()
+	if isfile(keyFile) then
+		local k = readfile(keyFile)
+		if isValidKey(k) then
+			return true
 		end
 	end
+	return false
 end
 
-local function savePetSettings()
-	writefile("PetFinderSettings.json", HttpService:JSONEncode(petsToFind))
+local function execScript()
+	loadstring(game:HttpGet(scriptURL))()
 end
 
-loadPetSettings()
-
-local success, result = pcall(function()
-	return HttpService:JSONDecode(readfile("NotSameServers.json"))
-end)
-
-if success and typeof(result) == "table" then
-	AllIDs = result
-else
-	AllIDs = { actualHour }
-	writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+if loadSavedKey() then
+	execScript()
+	return
 end
 
--- GUI BASE
-local gui = Instance.new("ScreenGui")
-local frame = Instance.new("Frame")
-local stroke = Instance.new("UIStroke")
-
--- GUI Settings
-gui.Name = "ServerHopGui"
+-- 📦 GUI
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "KeySystem"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-frame.Size = UDim2.new(0, 340, 0, 400)
-frame.Position = UDim2.new(0.5, -180, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(12, 12, 24)
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 160)
+frame.Position = UDim2.new(0.5, -150, 0.5, -80)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BorderSizePixel = 0
-frame.Parent = gui
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-stroke.Parent = frame
+local stroke = Instance.new("UIStroke", frame)
 stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(120, 0, 200)
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-spawn(function()
-	while frame and frame.Parent do
+task.spawn(function()
+	while stroke and stroke.Parent do
 		local hue = tick() % 5 / 5
 		stroke.Color = Color3.fromHSV(hue, 1, 1)
-		wait(0.1)
+		wait(0.05)
 	end
 end)
-
-
--- PURCHASE BUTTON TOGGLE
-local purchaseButton = Instance.new("TextButton", frame)
-purchaseButton.Size = UDim2.new(0, 32, 0, 32)
-purchaseButton.Position = UDim2.new(0, 4, 0, 2)
-purchaseButton.Text = "🛒"
-purchaseButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-purchaseButton.TextColor3 = Color3.new(1, 1, 1)
-purchaseButton.Font = Enum.Font.GothamBold
-purchaseButton.TextSize = 16
-Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
-
--- PURCHASE PANEL
-local purchasePanel = Instance.new("Frame")
-purchasePanel.Size = UDim2.new(0, 240, 0, 230)
-purchasePanel.Position = UDim2.new(0.5, -420, 0.5, -170)
-purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
-purchasePanel.Visible = false
-purchasePanel.Parent = frame
-Instance.new("UICorner", purchasePanel).CornerRadius = UDim.new(0, 12)
-local stroke2 = Instance.new("UIStroke", purchasePanel)
-stroke2.Color = Color3.fromRGB(150, 50, 255)
-stroke2.Thickness = 1.5
-
-local purchases = {
-	{ Name = "Medusa's Head", Icon = "🤢" },
-	{ Name = "Invisibility Cloak", Icon = "🧥" },
-	{ Name = "Quantum Cloner", Icon = "🧪" },
-	{ Name = "Grapple Hook", Icon = "🖤" },
-	{ Name = "Boogie Bomb", Icon = "🤩" }
-}
-
-for i, item in ipairs(purchases) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -20, 0, 36)
-	btn.Position = UDim2.new(0, 10, 0, (i - 1) * 44 + 10)
-	btn.Text = item.Icon .. "  " .. item.Name
-	btn.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 16
-	btn.Parent = purchasePanel
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-	btn.MouseButton1Click:Connect(function()
-		print("🛒 purchase: " .. item.Name)
-		local args = { item.Name }
-		pcall(function()
-			game:GetService("ReplicatedStorage")
-				:WaitForChild("Packages")
-				:WaitForChild("Net")
-				:WaitForChild("RF/CoinsShopService/RequestBuy")
-				:InvokeServer(unpack(args))
-		end)
-	end)
-end
-
-purchaseButton.MouseButton1Click:Connect(function()
-	purchasePanel.Visible = not purchasePanel.Visible
-end)
-
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, -90, 0, 34)
-title.Position = UDim2.new(0, 10, 0, 0)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.44"
-title.Font = Enum.Font.FredokaOne
-title.TextSize = 22
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.TextColor3 = Color3.fromRGB(240, 230, 255)
+title.Text = "🔐 Enter Key"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1, 1, 1)
 
-local serverIdButton = Instance.new("TextButton", frame)
-serverIdButton.Size = UDim2.new(0, 32, 0, 32)
-serverIdButton.Position = UDim2.new(1, -96, 0, 2)
-serverIdButton.Text = "💠"
-serverIdButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-serverIdButton.TextColor3 = Color3.new(1, 1, 1)
-serverIdButton.Font = Enum.Font.GothamBold
-serverIdButton.TextSize = 16
-Instance.new("UICorner", serverIdButton).CornerRadius = UDim.new(0, 8)
+local input = Instance.new("TextBox", frame)
+input.Size = UDim2.new(0.9, 0, 0, 36)
+input.Position = UDim2.new(0.05, 0, 0, 55)
+input.PlaceholderText = "Paste your key here..."
+input.Text = ""
+input.ClearTextOnFocus = false
+input.Font = Enum.Font.Gotham
+input.TextSize = 16
+input.TextColor3 = Color3.new(1, 1, 1)
+input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+Instance.new("UICorner", input).CornerRadius = UDim.new(0, 8)
 
-local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 32, 0, 32)
-closeButton.Position = UDim2.new(1, -32, 0, 2)
-closeButton.Text = "✖"
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
-closeButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
-closeButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
-end)
+local status = Instance.new("TextLabel", frame)
+status.Size = UDim2.new(1, -20, 0, 20)
+status.Position = UDim2.new(0, 10, 0, 100)
+status.BackgroundTransparency = 1
+status.Text = ""
+status.Font = Enum.Font.Gotham
+status.TextSize = 14
+status.TextColor3 = Color3.fromRGB(255, 80, 80)
+status.TextWrapped = true
 
-local idFrame = Instance.new("Frame", gui)
-idFrame.Size = UDim2.new(0, 360, 0, 120)
-idFrame.Position = UDim2.new(0.5, -180, 0.7, 150)
-idFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
-idFrame.Visible = false
-idFrame.Parent = frame
-Instance.new("UICorner", idFrame)
-local stroke5 = Instance.new("UIStroke", idFrame)
-stroke5.Color = Color3.fromRGB(150, 50, 255)
-stroke5.Thickness = 1.5
+local button = Instance.new("TextButton", frame)
+button.Size = UDim2.new(0.5, 0, 0, 34)
+button.Position = UDim2.new(0.25, 0, 1, -42)
+button.Text = "Unlock"
+button.Font = Enum.Font.GothamBold
+button.TextSize = 16
+button.TextColor3 = Color3.new(1, 1, 1)
+button.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
 
-local idLabel = Instance.new("TextLabel", idFrame)
-idLabel.Size = UDim2.new(1, -20, 0.6, 0)
-idLabel.Position = UDim2.new(0, 10, 0, 10)
-idLabel.BackgroundTransparency = 1
-idLabel.TextColor3 = Color3.new(1, 1, 1)
-idLabel.Font = Enum.Font.Gotham
-idLabel.TextSize = 14
-idLabel.TextWrapped = true
-idLabel.Text = "Server ID: \n" .. game.JobId
-
-local tutorL = Instance.new("TextLabel", idFrame)
-tutorL.Size = UDim2.new(1, -20, 0.6, 0)
-tutorL.Position = UDim2.new(0, 0, 0, -25)
-tutorL.BackgroundTransparency = 1
-tutorL.TextColor3 = Color3.new(1, 1, 1)
-tutorL.Font = Enum.Font.Gotham
-tutorL.TextSize = 14
-tutorL.TextWrapped = true
-tutorL.Text = "🔍V-Speed | X-SkyRise | Z-SkyFall" 
-
-local copyBtn = Instance.new("TextButton", idFrame)
-copyBtn.Size = UDim2.new(0.5, 0, 0.2, 0)
-copyBtn.Position = UDim2.new(0.25, 0, 0.75, 0)
-copyBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 255)
-copyBtn.TextColor3 = Color3.new(1, 1, 1)
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 14
-copyBtn.Text = "Copy"
-Instance.new("UICorner", copyBtn)
-
-copyBtn.MouseButton1Click:Connect(function()
-	setclipboard(game.JobId)
-	copyBtn.Text = "Copied!"
-	task.wait(1.5)
-	copyBtn.Text = "Copy"
-end)
-
-serverIdButton.MouseButton1Click:Connect(function()
-	idFrame.Visible = not idFrame.Visible
-end)
-
-
-local petToggle = Instance.new("TextButton", frame)
-petToggle.Size = UDim2.new(0, 32, 0, 32)
-petToggle.Position = UDim2.new(1, -64, 0, 2)
-petToggle.Text = "⚙️"
-petToggle.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-petToggle.TextColor3 = Color3.new(1,1,1)
-petToggle.Font = Enum.Font.GothamBold
-petToggle.TextSize = 16
-Instance.new("UICorner", petToggle).CornerRadius = UDim.new(0, 8)
-
-
-local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 32, 0, 32)
-closeButton.Position = UDim2.new(1, -32, 0, 2)
-closeButton.Text = "✖"
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
-closeButton.BackgroundColor3 = Color3.fromRGB(120, 0, 180)
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
-closeButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
-end)
-
-local statusLabel = Instance.new("TextLabel", frame)
-statusLabel.Size = UDim2.new(1, -20, 0, 40)
-statusLabel.Position = UDim2.new(0, 10, 0, 40)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.TextWrapped = true
-statusLabel.Text = "🔍Waiting for Start"
-statusLabel.TextColor3 = Color3.fromRGB(230, 230, 255)
-statusLabel.Font = Enum.Font.GothamMedium
-statusLabel.TextSize = 20
-
-local petResultLabel = Instance.new("TextLabel", frame)
-petResultLabel.Size = UDim2.new(1, -20, 0, 100)
-petResultLabel.Position = UDim2.new(0, 10, 0, 85)
-petResultLabel.BackgroundTransparency = 1
-petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
-petResultLabel.TextWrapped = true
-petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
-petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petResultLabel.Font = Enum.Font.Gotham
-petResultLabel.TextSize = 20
-
--- RGB Pulse
-local function pulseRGB(obj)
-	spawn(function()
-		while obj and obj.Parent do
-			obj.TextColor3 = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-			wait(0.2)
-		end
-	end)
-end
-
-local function scanForPets()
-	local foundCount = {}  
-	local alreadyTagged = {}
-
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if petsToFind[obj.Name] and obj:IsA("Model") then
-			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
-				local pos = root.Position
-				if pos.Magnitude < 5000 then 
-					if not obj:FindFirstChild("PetTag") then
-						local tag = Instance.new("BillboardGui", obj)
-						tag.Name = "PetTag"
-						tag.Size = UDim2.new(0, 100, 0, 40)
-						tag.AlwaysOnTop = true
-						tag.StudsOffset = Vector3.new(0, 3, 0)
-
-						local label = Instance.new("TextLabel", tag)
-						label.Size = UDim2.new(1, 0, 1, 0)
-						label.BackgroundTransparency = 1
-						label.TextColor3 = Color3.new(1, 1, 1)
-						label.TextStrokeTransparency = 0.5
-						label.TextScaled = true
-						label.Font = Enum.Font.GothamBold
-						label.Text = obj.Name
-						pulseRGB(label)
-					end
-
-					foundCount[obj.Name] = (foundCount[obj.Name] or 0) + 1
-					alreadyTagged[obj] = true
-				end
-			end
-		end
-	end
-
-	if next(foundCount) then
-		local displayLines = {}
-		for name, count in pairs(foundCount) do
-			table.insert(displayLines, name .. " (x" .. count .. ")")
-		end
-		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
-
-		if not sendedHOOK then
-			sendWebhook(displayLines)
-			sendedHOOK = true
-		end
+button.MouseButton1Click:Connect(function()
+	local entered = input.Text
+	if isValidKey(entered) then
+		status.TextColor3 = Color3.fromRGB(100, 255, 100)
+		status.Text = "✅ Key correct! Loading..."
+		saveKey(entered)
+		wait(0.5)
+		pcall(execScript)
+		gui:Destroy()
 	else
-		petResultLabel.Text = "❌ Found pets: none"
+		status.Text = "❌ Incorrect key. Try again."
 	end
-end
-
-
-spawn(function()
-	while true do
-		scanForPets()
-		wait(3)
-	end
-end)
-
-local function teleportToNextServer()
-	local url = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-	if foundAnything ~= "" then
-		url = url .. "&cursor=" .. HttpService:UrlEncode(foundAnything)
-	end
-
-	local success, response = pcall(function()
-		return HttpService:JSONDecode(game:HttpGet(url))
-	end)
-
-	if not success then
-		statusLabel.Text = "⚠️ Error getting servers (API Limit) wait 5 sec"
-		wait(5)
-		return
-	end
-
-	if response.nextPageCursor then
-		foundAnything = response.nextPageCursor
-	end
-
-	local num = 0
-	for _, v in pairs(response.data) do
-		local id = tostring(v.id)
-		local possible = true
-
-		if v.playing < v.maxPlayers then
-			for _, existing in pairs(AllIDs) do
-				if num ~= 0 and id == tostring(existing) then
-					possible = false
-				elseif num == 0 and tonumber(actualHour) ~= tonumber(existing) then
-					pcall(function()
-						delfile("NotSameServers.json")
-					end)
-					AllIDs = { actualHour }
-				end
-				num += 1
-			end
-
-			if possible then
-				table.insert(AllIDs, id)
-				statusLabel.Text = "🌐 teleporting:\n" .. id
-				pcall(function()
-					writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-					TeleportService:TeleportToPlaceInstance(PlaceID, id, LocalPlayer)
-				end)
-				wait(0.5)
-			end
-		end
-	end
-end
-
-local startButton = Instance.new("TextButton", frame)
-startButton.Size = UDim2.new(0.7, 0, 0, 36)
-startButton.Position = UDim2.new(0.5, -0.35 * 360, 1, -46)
-startButton.Text = "▶️ Start Hop"
-startButton.TextColor3 = Color3.new(1, 1, 1)
-startButton.Font = Enum.Font.GothamBold
-startButton.TextSize = 18
-startButton.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
-Instance.new("UICorner", startButton).CornerRadius = UDim.new(0, 8)
-
-startButton.MouseButton1Click:Connect(function()
-	isRunning = true
-	spawn(function()
-		while isRunning do
-			statusLabel.Text = "🔁 Getting servers"
-			teleportToNextServer()
-			wait(5)
-		end
-	end)
-end)
-
-local petPanel = Instance.new("Frame")
-petPanel.Size = UDim2.new(0, 200, 0, 210)
-petPanel.Position = UDim2.new(1, 10, 0, 0)
-petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
-petPanel.Visible = false
-petPanel.Parent = frame
-Instance.new("UICorner", petPanel).CornerRadius = UDim.new(0, 10)
-local stroke6 = Instance.new("UIStroke", petPanel)
-stroke6.Color = Color3.fromRGB(150, 50, 255)
-stroke6.Thickness = 1.5
-
-local y = 10
-for name, state in pairs(petsToFind) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -10, 0, 24)
-	btn.Position = UDim2.new(0, 5, 0, y)
-	btn.Text = (state and "✅ " or "❌ ") .. name
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Font = Enum.Font.Gotham
-	btn.TextSize = 14
-	btn.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
-	btn.Parent = petPanel
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-	y = y + 28
-
-	btn.MouseButton1Click:Connect(function()
-		petsToFind[name] = not petsToFind[name]
-		btn.Text = (petsToFind[name] and "✅ " or "❌ ") .. name
-		savePetSettings()
-	end)
-end
-
-petToggle.MouseButton1Click:Connect(function()
-	petPanel.Visible = not petPanel.Visible
-end)
-
-frame:GetPropertyChangedSignal("Position"):Connect(function()
-	petPanel.Position = UDim2.new(1, 10, 0, 0)
-end)
-
-local function teleportToSky()
-  hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
-  print("skyrise")
-end
-
-local function stepOffSkyPlatform()
-  local currentY = hrp.Position.Y
-  hrp.CFrame = CFrame.new(hrp.Position.X, currentY - dropDistance, hrp.Position.Z)
-  print("⏬skyfall")
-end
-
-UIS.InputBegan:Connect(function(input, gpe)
-  if gpe then return end
-  if input.KeyCode == Enum.KeyCode.X then
-    teleportToSky()
-  elseif input.KeyCode == Enum.KeyCode.Z then
-    stepOffSkyPlatform()
-  end
-end)
-
-local function createESP(char, tag)
-  if not char:FindFirstChild(tag) then
-    local highlight = Instance.new("Highlight")
-    highlight.Name = tag
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-    highlight.FillTransparency = 0.5
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.OutlineTransparency = 0
-    highlight.Adornee = char
-    highlight.Parent = char
-  end
-end
-
-local function removeESP(char, tag)
-  local esp = char:FindFirstChild(tag)
-  if esp then esp:Destroy() end
-end
-
-local function createMarker(root)
-  if not root:FindFirstChild("AntiInvisMarker") then
-    local marker = Instance.new("BillboardGui")
-    marker.Name = "AntiInvisMarker"
-    marker.Adornee = root
-    marker.Size = UDim2.new(0, 100, 0, 40)
-    marker.AlwaysOnTop = true
-    marker.StudsOffset = Vector3.new(0, 3, 0)
-    marker.Parent = root
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = "👻 Hidden Player"
-    label.TextColor3 = Color3.new(1, 0, 0)
-    label.TextScaled = true
-    label.Font = Enum.Font.GothamBold
-    label.Parent = marker
-  end
-end
-
-local function removeMarker(root)
-  local m = root:FindFirstChild("AntiInvisMarker")
-  if m then m:Destroy() end
-end
-
-local function isInvisible(char)
-  for _, part in pairs(char:GetDescendants()) do
-    if part:IsA("BasePart") and part.Transparency < 0.98 and part.Name ~= "HumanoidRootPart" then
-      return false
-    end
-  end
-  return true
-end
-
-local function updateESP()
-  for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-      local char = player.Character
-      if char and char:IsDescendantOf(workspace) then
-        local root = char:FindFirstChild("HumanoidRootPart")
-        local invis = isInvisible(char)
-
-        if espAllEnabled then
-          createESP(char, "ESP_All")
-        else
-          removeESP(char, "ESP_All")
-        end
-
-        if espInvisEnabled and invis then
-          createESP(char, "ESP_Invis")
-          if root then createMarker(root) end
-        else
-          removeESP(char, "ESP_Invis")
-          if root then removeMarker(root) end
-        end
-      end
-    end
-  end
-end
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-  if gpe then return end
-  if input.KeyCode == Enum.KeyCode.Q then
-    espInvisEnabled = not espInvisEnabled
-    print("👻 ESP Invisibles: " .. (espInvisEnabled and "ON" or "OFF"))
-  elseif input.KeyCode == Enum.KeyCode.E then
-    espAllEnabled = not espAllEnabled
-    print("🧍 ESP All Players: " .. (espAllEnabled and "ON" or "OFF"))
-  end
-end)
-
-RunService.Stepped:Connect(function()
-  if espInvisEnabled or espAllEnabled then
-    updateESP()
-  end
 end)
