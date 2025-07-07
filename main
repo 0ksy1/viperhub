@@ -49,6 +49,16 @@ local HttpService = game:GetService("HttpService")
 local sendedHOOK = false
 local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" -- 🔁 ВСТАВЬ СВОЙ WEBHOOK СЮДА
 
+local playedSoundOnce = false
+local petBeams = {}
+
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://115047431910518"
+sound.Volume = 1
+sound.Name = "FoundPetSound"
+sound.Parent = game:GetService("SoundService") 
+
+
 local function sendWebhook(foundPets)
 	if webhookUrl == "" or #foundPets == 0 then return end
 	local data = {
@@ -361,24 +371,51 @@ local function pulseRGB(obj)
 	end)
 end
 
+local petBeams = {}
+local playedSoundOnce = false
+
+local function clearBeams()
+	for _, beam in ipairs(petBeams) do
+		if beam and beam.Parent then
+			beam:Destroy()
+		end
+	end
+	table.clear(petBeams)
+end
+
+local function getOrCreatePlayerAttachment()
+	local att = hrp:FindFirstChild("PlayerBeamAttachment")
+	if not att then
+		att = Instance.new("Attachment")
+		att.Name = "PlayerBeamAttachment"
+		att.Parent = hrp
+	end
+	return att
+end
+
 local function scanForPets()
-	local foundCount = {}  
+	clearBeams()
+	local foundCount = {}
 	local alreadyTagged = {}
+
+	local playerAtt = getOrCreatePlayerAttachment()
 
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if petsToFind[obj.Name] and obj:IsA("Model") then
 			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
-				local pos = root.Position
-				if pos.Magnitude < 5000 then 
+				if (root.Position - hrp.Position).Magnitude < 5000 then
+
+					
 					if not obj:FindFirstChild("PetTag") then
-						local tag = Instance.new("BillboardGui", obj)
+						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
 						tag.Size = UDim2.new(0, 140, 0, 80)
 						tag.AlwaysOnTop = true
 						tag.StudsOffset = Vector3.new(0, 3, 0)
+						tag.Parent = obj
 
-						local label = Instance.new("TextLabel", tag)
+						local label = Instance.new("TextLabel")
 						label.Size = UDim2.new(1, 0, 1, 0)
 						label.BackgroundTransparency = 1
 						label.TextColor3 = Color3.new(1, 1, 1)
@@ -386,9 +423,41 @@ local function scanForPets()
 						label.TextScaled = true
 						label.Font = Enum.Font.GothamBold
 						label.Text = obj.Name
+						label.Parent = tag
+						
 						pulseRGB(label)
 					end
 
+				
+					local petAtt = Instance.new("Attachment")
+					petAtt.Name = "PetBeamAttachment"
+					petAtt.Parent = root
+
+					local beam = Instance.new("Beam")
+					beam.Name = "PetBeam"
+					beam.Attachment0 = playerAtt
+					beam.Attachment1 = petAtt
+					beam.Width0 = 0.15
+					beam.Width1 = 0.15
+					beam.LightEmission = 1
+					beam.Transparency = NumberSequence.new(0.1)
+					beam.FaceCamera = true
+					beam.Parent = root
+
+					
+					task.spawn(function()
+						while beam and beam.Parent do
+							local hue = tick() % 5 / 5
+							local color = Color3.fromHSV(hue, 1, 1)
+							beam.Color = ColorSequence.new{
+								ColorSequenceKeypoint.new(0, color),
+								ColorSequenceKeypoint.new(1, color)
+							}
+							task.wait(0.1)
+						end
+					end)
+
+					table.insert(petBeams, beam)
 					foundCount[obj.Name] = (foundCount[obj.Name] or 0) + 1
 					alreadyTagged[obj] = true
 				end
@@ -403,6 +472,11 @@ local function scanForPets()
 		end
 		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
 
+		if not playedSoundOnce then
+			playedSoundOnce = true
+			sound:Play()
+		end
+
 		if not sendedHOOK then
 			sendWebhook(displayLines)
 			sendedHOOK = true
@@ -411,6 +485,8 @@ local function scanForPets()
 		petResultLabel.Text = "❌ Found pets: none"
 	end
 end
+
+
 
 
 spawn(function()
