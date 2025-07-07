@@ -83,6 +83,23 @@ local function sendWebhook(foundPets)
 	end
 end
 
+local function loadHopStatus()
+	local success, result = pcall(function()
+		return HttpService:JSONDecode(readfile("ServerHopActive.json"))
+	end)
+	if success and typeof(result) == "boolean" then
+		return result
+	else
+		writefile("ServerHopActive.json", HttpService:JSONEncode(false))
+		return false
+	end
+end
+
+local function saveHopStatus(value)
+	writefile("ServerHopActive.json", HttpService:JSONEncode(value))
+end
+
+local isRunning = loadHopStatus()
 
 
 
@@ -232,7 +249,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.46"
+title.Text = "😈  Server Hopper v1.47"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -497,6 +514,11 @@ spawn(function()
 end)
 
 local function teleportToNextServer()
+	if not isRunning then
+		statusLabel.Text = "⏹ ServerHop Stopped"
+		return
+	end
+
 	local url = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
 	if foundAnything ~= "" then
 		url = url .. "&cursor=" .. HttpService:UrlEncode(foundAnything)
@@ -518,6 +540,11 @@ local function teleportToNextServer()
 
 	local num = 0
 	for _, v in pairs(response.data) do
+		if not isRunning then
+			statusLabel.Text = "⏹ ServerHop Cancelled"
+			return
+		end
+
 		local id = tostring(v.id)
 		local possible = true
 
@@ -535,6 +562,11 @@ local function teleportToNextServer()
 			end
 
 			if possible then
+				if not isRunning then
+					statusLabel.Text = "⏹ ServerHop Cancelled Before Teleport"
+					return
+				end
+
 				table.insert(AllIDs, id)
 				statusLabel.Text = "🌐 teleporting:\n" .. id
 				pcall(function()
@@ -547,9 +579,10 @@ local function teleportToNextServer()
 	end
 end
 
+
 local startButton = Instance.new("TextButton", frame)
 startButton.Size = UDim2.new(0.7, 0, 0, 36)
-startButton.Position = UDim2.new(0.5, -0.35 * 360, 1, -46)
+startButton.Position = UDim2.new(0.5, -170, 1, -46)
 startButton.Text = "▶️ Start Hop"
 startButton.TextColor3 = Color3.new(1, 1, 1)
 startButton.Font = Enum.Font.GothamBold
@@ -559,13 +592,31 @@ Instance.new("UICorner", startButton).CornerRadius = UDim.new(0, 8)
 
 startButton.MouseButton1Click:Connect(function()
 	isRunning = true
+	saveHopStatus(true)
 	spawn(function()
 		while isRunning do
 			statusLabel.Text = "🔁 Getting servers"
 			teleportToNextServer()
 			wait(5)
+			isRunning = loadHopStatus()
 		end
 	end)
+end)
+
+local stopButton = Instance.new("TextButton", frame)
+stopButton.Size = UDim2.new(0.3, 0, 0, 36)
+stopButton.Position = UDim2.new(0.5, 65, 1, -46)
+stopButton.Text = "⏹ Stop"
+stopButton.TextColor3 = Color3.new(1, 1, 1)
+stopButton.Font = Enum.Font.GothamBold
+stopButton.TextSize = 18
+stopButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+Instance.new("UICorner", stopButton).CornerRadius = UDim.new(0, 8)
+
+stopButton.MouseButton1Click:Connect(function()
+	isRunning = false
+	saveHopStatus(false)
+	statusLabel.Text = "⏹ ServerHop Stopped"
 end)
 
 local petPanel = Instance.new("Frame")
