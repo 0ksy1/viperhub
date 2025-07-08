@@ -249,7 +249,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.47"
+title.Text = "😈  Server Hopper v1.49"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -513,6 +513,21 @@ spawn(function()
 	end
 end)
 
+local function hasWantedPets()
+	for name, enabled in pairs(petsToFind) do
+		if enabled then
+			for _, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("Model") and obj.Name == name then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+
+
 local function teleportToNextServer()
 	if not isRunning then
 		statusLabel.Text = "⏹ ServerHop Stopped"
@@ -524,13 +539,22 @@ local function teleportToNextServer()
 		url = url .. "&cursor=" .. HttpService:UrlEncode(foundAnything)
 	end
 
-	local success, response = pcall(function()
+
+	local success, response
+repeat
+	success, response = pcall(function()
 		return HttpService:JSONDecode(game:HttpGet(url))
 	end)
 
 	if not success then
-		statusLabel.Text = "⚠️ Error getting servers (API Limit) wait 5 sec"
+		statusLabel.Text = "⚠️ API Limit — retrying in 5s..."
 		wait(5)
+	end
+until success
+
+
+	if not success then
+		statusLabel.Text = "❌ Failed to get servers after 5 retries"
 		return
 	end
 
@@ -580,6 +604,9 @@ local function teleportToNextServer()
 end
 
 
+
+
+
 local startButton = Instance.new("TextButton", frame)
 startButton.Size = UDim2.new(0.7, 0, 0, 36)
 startButton.Position = UDim2.new(0.5, -170, 1, -46)
@@ -594,12 +621,18 @@ startButton.MouseButton1Click:Connect(function()
 	isRunning = true
 	saveHopStatus(true)
 	spawn(function()
-		while isRunning do
-			statusLabel.Text = "🔁 Getting servers"
-			teleportToNextServer()
-			wait(5)
-			isRunning = loadHopStatus()
+			while isRunning do
+		if hasWantedPets() then
+			statusLabel.Text = "✅ Pets Found! Stopping AutoHop"
+			isRunning = false
+			saveHopStatus(false)
+			break
 		end
+		statusLabel.Text = "🔁 Getting servers"
+		teleportToNextServer()
+		wait(5)
+	end
+
 	end)
 end)
 
@@ -618,6 +651,27 @@ stopButton.MouseButton1Click:Connect(function()
 	saveHopStatus(false)
 	statusLabel.Text = "⏹ ServerHop Stopped"
 end)
+
+local autoHopButton = Instance.new("TextButton", frame)
+autoHopButton.Size = UDim2.new(1, -20, 0, 36)
+autoHopButton.Position = UDim2.new(0, 10, 1, -90)
+autoHopButton.Text = "🔄 AutoHop"
+autoHopButton.TextColor3 = Color3.new(1, 1, 1)
+autoHopButton.Font = Enum.Font.GothamBold
+autoHopButton.TextSize = 18
+autoHopButton.BackgroundColor3 = Color3.fromRGB(0, 255, 64)
+Instance.new("UICorner", autoHopButton).CornerRadius = UDim.new(0, 8)
+
+autoHopButton.MouseButton1Click:Connect(function()
+	isRunning = true
+	saveHopStatus(true)
+	statusLabel.Text = "🔄 AutoHop started"
+	wait(1)
+	teleportToNextServer()
+end)
+
+
+
 
 local petPanel = Instance.new("Frame")
 petPanel.Size = UDim2.new(0, 200, 0, 210)
@@ -774,3 +828,18 @@ RunService.Stepped:Connect(function()
     updateESP()
   end
 end)
+
+if loadHopStatus() then
+	spawn(function()
+		wait(2) 
+		if hasWantedPets() then
+			statusLabel.Text = "✅ Pets Found! AutoHop stopped"
+			isRunning = false
+			saveHopStatus(false)
+		else
+			statusLabel.Text = "🔁 AutoHop: hopping..."
+			teleportToNextServer()
+		end
+	end)
+end
+
