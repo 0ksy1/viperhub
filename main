@@ -1,4 +1,3 @@
--- made by viper 
 
 repeat wait() until game:IsLoaded()
 repeat wait() until game.Players.LocalPlayer and game.Players.LocalPlayer:FindFirstChild("PlayerGui")
@@ -47,7 +46,7 @@ local petsToFind = {
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" -- 🔁 ВСТАВЬ СВОЙ WEBHOOK СЮДА
+local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" 
 
 local playedSoundOnce = false
 local petBeams = {}
