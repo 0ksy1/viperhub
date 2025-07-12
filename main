@@ -40,7 +40,12 @@ local petsToFind = {
 	["Los Tralaleritos"] = true,
 	["Graipuss Medussi"] = true,
 	["La Grande Combinasion"] = true,
-	["Garama and Madundung"] = true
+	["Garama and Madundung"] = true,
+        ["Orcalero Orcala"] = true,
+    	["Torrtuginni Dragonfrutini"] = true,
+    	["Pot Hotspot"] = true,
+    	["Las Tralaleritas"] = true,
+    	["Lucky Block"] = true
 }
 
 local HttpService = game:GetService("HttpService")
