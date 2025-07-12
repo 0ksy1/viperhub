@@ -253,7 +253,7 @@ local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -90, 0, 34)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.5"
+title.Text = "😈  Server Hopper v1.51"
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -556,11 +556,6 @@ repeat
 	end
 until success
 
-
-	if not success then
-		statusLabel.Text = "❌ Failed to get servers after 5 retries"
-		return
-	end
 
 	if response.nextPageCursor then
 		foundAnything = response.nextPageCursor
