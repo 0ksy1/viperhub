@@ -1,9 +1,12 @@
---trxy
+--trixx
+
 repeat wait() until game:IsLoaded()
 repeat wait() until game.Players.LocalPlayer and game.Players.LocalPlayer:FindFirstChild("PlayerGui")
 
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
@@ -13,7 +16,6 @@ local lp = Players.LocalPlayer
 local char = lp.Character or lp.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
-local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local skyY = 230        
@@ -34,13 +36,13 @@ local actualHour = os.date("!*t").hour
 local isRunning = false
 
 local petsToFind = {
-	["Tralalero Tralala"] = true,
-	["La Vacca Saturno Saturnita"] = true,
-	["Sammyni Spyderini"] = true,
-	["Los Tralaleritos"] = true,
-	["Graipuss Medussi"] = true,
-	["La Grande Combinasion"] = true,
-	["Garama and Madundung"] = true,
+	    ["Tralalero Tralala"] = true,
+	    ["La Vacca Saturno Saturnita"] = true,
+	    ["Sammyni Spyderini"] = true,
+	    ["Los Tralaleritos"] = true,
+	    ["Graipuss Medussi"] = true,
+	    ["La Grande Combinasion"] = true,
+	    ["Garama and Madundung"] = true,
         ["Orcalero Orcala"] = true,
     	["Torrtuginni Dragonfrutini"] = true,
     	["Pot Hotspot"] = true,
@@ -61,7 +63,6 @@ sound.SoundId = "rbxassetid://115047431910518"
 sound.Volume = 1
 sound.Name = "FoundPetSound"
 sound.Parent = game:GetService("SoundService") 
-
 
 local function sendWebhook(foundPets)
 	if webhookUrl == "" or #foundPets == 0 then return end
@@ -104,8 +105,6 @@ local function saveHopStatus(value)
 end
 
 local isRunning = loadHopStatus()
-
-
 
 RunService.RenderStepped:Connect(function(dt)
 	if not toggled then return end
@@ -154,63 +153,161 @@ else
 	writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
 end
 
--- GUI BASE
-local gui = Instance.new("ScreenGui")
-local frame = Instance.new("Frame")
+
+--gui start
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "viperhub"
+ScreenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame", ScreenGui)
+mainFrame.Size = UDim2.new(0, 500, 0, 350)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+
 local stroke = Instance.new("UIStroke")
-
--- GUI Settings
-gui.Name = "ServerHopGui"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-frame.Size = UDim2.new(0, 340, 0, 400)
-frame.Position = UDim2.new(0.5, -180, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(12, 12, 24)
-frame.BorderSizePixel = 0
-frame.Parent = gui
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
-
-stroke.Parent = frame
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(120, 0, 200)
+stroke.Thickness = 3
+stroke.Transparency = 0 
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = mainFrame
 
-spawn(function()
-	while frame and frame.Parent do
-		local hue = tick() % 5 / 5
-		stroke.Color = Color3.fromHSV(hue, 1, 1)
-		wait(0.1)
-	end
+local RunService = game:GetService("RunService")
+
+RunService.RenderStepped:Connect(function()
+	local hue = tick() % 5 / 5 
+	local rgb = Color3.fromHSV(hue, 1, 1)
+	stroke.Color = rgb
 end)
 
 
--- PURCHASE BUTTON TOGGLE
-local purchaseButton = Instance.new("TextButton", frame)
-purchaseButton.Size = UDim2.new(0, 32, 0, 32)
-purchaseButton.Position = UDim2.new(0, 4, 0, 2)
-purchaseButton.Text = "🛒"
-purchaseButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-purchaseButton.TextColor3 = Color3.new(1, 1, 1)
-purchaseButton.Font = Enum.Font.GothamBold
-purchaseButton.TextSize = 16
-Instance.new("UICorner", purchaseButton).CornerRadius = UDim.new(0, 8)
+local navbar = Instance.new("Frame", mainFrame)
+navbar.Size = UDim2.new(1, 0, 0, 40)
+navbar.Position = UDim2.new(0, 0, 0, 0)
+navbar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+navbar.BorderSizePixel = 0
+navbar.ZIndex = 2
+Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 
--- PURCHASE PANEL
-local purchasePanel = Instance.new("Frame")
-purchasePanel.Size = UDim2.new(0, 240, 0, 230)
-purchasePanel.Position = UDim2.new(0.5, -420, 0.5, -170)
-purchasePanel.BackgroundColor3 = Color3.fromRGB(24, 24, 48)
-purchasePanel.Visible = false
-purchasePanel.Parent = frame
-Instance.new("UICorner", purchasePanel).CornerRadius = UDim.new(0, 12)
-local stroke2 = Instance.new("UIStroke", purchasePanel)
-stroke2.Color = Color3.fromRGB(150, 50, 255)
-stroke2.Thickness = 1.5
+local title = Instance.new("TextLabel", navbar)
+title.Size = UDim2.new(0, 200, 1, 0)
+title.Position = UDim2.new(0, 12, 0, 0)
+title.Text = "viperhub v2"
+title.TextColor3 = Color3.fromRGB(250, 250, 250)
+title.Font = Enum.Font.FredokaOne
+title.TextSize = 22
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 3
+
+
+local closeBtn = Instance.new("TextButton", navbar)
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0, 8)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+closeBtn.BorderSizePixel = 0
+closeBtn.ZIndex = 3
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+
+
+local minimizeBtn = Instance.new("TextButton", navbar)
+minimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+minimizeBtn.Position = UDim2.new(1, -60, 0, 8)
+minimizeBtn.Text = "━"
+minimizeBtn.TextColor3 = Color3.fromRGB(200, 200, 255)
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 16
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.ZIndex = 3
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 6)
+
+
+local TabButtonsFrame = Instance.new("Frame", mainFrame)
+TabButtonsFrame.Size = UDim2.new(0, 120, 1, -50)
+TabButtonsFrame.Position = UDim2.new(0, 0, 0, 50)
+TabButtonsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+TabButtonsFrame.BorderSizePixel = 0
+Instance.new("UICorner", TabButtonsFrame).CornerRadius = UDim.new(0, 12)
+
+
+local tabs = {"Main", "Buy", "Pet Settings","Utilities", "Settings"}
+local pages = {}
+
+for i, tabName in ipairs(tabs) do
+	local tabButton = Instance.new("TextButton", TabButtonsFrame)
+	tabButton.Size = UDim2.new(1, -10, 0, 40)
+	tabButton.Position = UDim2.new(0, 5, 0, (i - 1) * 45 + 10)
+	tabButton.Text = tabName
+	tabButton.Font = Enum.Font.GothamBold
+	tabButton.TextColor3 = Color3.fromRGB(200, 200, 255)
+	tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	tabButton.BorderSizePixel = 0
+	tabButton.TextSize = 16
+	Instance.new("UICorner", tabButton).CornerRadius = UDim.new(0, 8)
+
+	local page = Instance.new("Frame", mainFrame)
+	page.Size = UDim2.new(1, -130, 1, -60)
+	page.Position = UDim2.new(0, 130, 0, 50)
+	page.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	page.BorderSizePixel = 0
+	page.Visible = (i == 1)
+	Instance.new("UICorner", page).CornerRadius = UDim.new(0, 10)
+
+	pages[tabName] = page
+
+	tabButton.MouseButton1Click:Connect(function()
+		for _, pg in pairs(pages) do
+			pg.Visible = false
+		end
+		page.Visible = true
+	end)
+end
+
+
+local isMinimized = false
+local originalSize = mainFrame.Size
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	if isMinimized then
+		local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = originalSize})
+		tween:Play()
+		wait(0.3)
+		TabButtonsFrame.Visible = true
+		for _, page in pairs(pages) do
+			page.Visible = false
+		end
+		pages["Main"].Visible = true
+	else
+		TabButtonsFrame.Visible = false
+		for _, page in pairs(pages) do
+			page.Visible = false
+		end
+		local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 500, 0, 50)})
+		tween:Play()
+	end
+	isMinimized = not isMinimized
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+
+local purchasePanel = Instance.new("Frame", pages["Buy"])
+purchasePanel.Size = UDim2.new(1, -20, 1, -20)
+purchasePanel.Position = UDim2.new(0, 10, 0, 10)
+purchasePanel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+purchasePanel.BorderSizePixel = 0
+purchasePanel.ZIndex = 1
+Instance.new("UICorner", purchasePanel).CornerRadius = UDim.new(0, 10)
+
 
 local purchases = {
 	{ Name = "Medusa's Head", Icon = "🤢" },
@@ -220,82 +317,71 @@ local purchases = {
 	{ Name = "Boogie Bomb", Icon = "🤩" }
 }
 
+
 for i, item in ipairs(purchases) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -20, 0, 36)
-	btn.Position = UDim2.new(0, 10, 0, (i - 1) * 44 + 10)
+	local btn = Instance.new("TextButton", purchasePanel)
+	btn.Size = UDim2.new(1, -20, 0, 40)
+	btn.Position = UDim2.new(0, 10, 0, (i - 1) * 46 + 10)
 	btn.Text = item.Icon .. "  " .. item.Name
-	btn.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
-	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.BackgroundColor3 = Color3.fromRGB(80, 50, 150) 
+	btn.TextColor3 = Color3.fromRGB(220, 220, 255)
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 16
-	btn.Parent = purchasePanel
+	btn.BorderSizePixel = 0
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
 
+
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundColor3 = Color3.fromRGB(100, 70, 180)
+	end)
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundColor3 = Color3.fromRGB(80, 50, 150)
+	end)
+
 	btn.MouseButton1Click:Connect(function()
-		print("🛒 purchase: " .. item.Name)
-		local args = { item.Name }
+		print("🛒 Покупка: " .. item.Name)
 		pcall(function()
 			game:GetService("ReplicatedStorage")
 				:WaitForChild("Packages")
 				:WaitForChild("Net")
 				:WaitForChild("RF/CoinsShopService/RequestBuy")
-				:InvokeServer(unpack(args))
+				:InvokeServer(item.Name)
 		end)
 	end)
 end
 
-purchaseButton.MouseButton1Click:Connect(function()
-	purchasePanel.Visible = not purchasePanel.Visible
+
+
+pcall(function()
+	local loaded = readfile("NotSameServers.json")
+	AllIDs = HttpService:JSONDecode(loaded)
 end)
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, -90, 0, 34)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "😈  Server Hopper v1.51"
-title.Font = Enum.Font.FredokaOne
-title.TextSize = 22
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.TextColor3 = Color3.fromRGB(240, 230, 255)
+local statusLabel = Instance.new("TextLabel", pages["Main"])
+statusLabel.Size = UDim2.new(1, -20, 0, 40)
+statusLabel.Position = UDim2.new(0, 10, 0, 10)
+statusLabel.Text = "⏳ Waiting to Start..."
+statusLabel.TextColor3 = Color3.fromRGB(130, 200, 255)
+statusLabel.Font = Enum.Font.GothamSemibold
+statusLabel.TextSize = 16
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextWrapped = true
 
-local serverIdButton = Instance.new("TextButton", frame)
-serverIdButton.Size = UDim2.new(0, 32, 0, 32)
-serverIdButton.Position = UDim2.new(1, -96, 0, 2)
-serverIdButton.Text = "💠"
-serverIdButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-serverIdButton.TextColor3 = Color3.new(1, 1, 1)
-serverIdButton.Font = Enum.Font.GothamBold
-serverIdButton.TextSize = 16
-Instance.new("UICorner", serverIdButton).CornerRadius = UDim.new(0, 8)
+local petResultLabel = Instance.new("TextLabel", pages["Main"])
+petResultLabel.Size = UDim2.new(1, -20, 0, 100)
+petResultLabel.Position = UDim2.new(0, 10, 0, 50)
+petResultLabel.BackgroundTransparency = 1
+petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
+petResultLabel.TextWrapped = true
+petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
+petResultLabel.Text = "🐾 Found pets: none"
+petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+petResultLabel.Font = Enum.Font.Gotham
+petResultLabel.TextSize = 15
 
-local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 32, 0, 32)
-closeButton.Position = UDim2.new(1, -32, 0, 2)
-closeButton.Text = "✖"
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
-closeButton.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
-closeButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
-end)
-
-local idFrame = Instance.new("Frame", gui)
-idFrame.Size = UDim2.new(0, 360, 0, 120)
-idFrame.Position = UDim2.new(0.5, -180, 0.7, 150)
-idFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
-idFrame.Visible = false
-idFrame.Parent = frame
-Instance.new("UICorner", idFrame)
-local stroke5 = Instance.new("UIStroke", idFrame)
-stroke5.Color = Color3.fromRGB(150, 50, 255)
-stroke5.Thickness = 1.5
-
-local idLabel = Instance.new("TextLabel", idFrame)
+local idLabel = Instance.new("TextLabel", pages["Settings"])
 idLabel.Size = UDim2.new(1, -20, 0.6, 0)
-idLabel.Position = UDim2.new(0, 10, 0, 10)
+idLabel.Position = UDim2.new(0, 10, 0, -70)
 idLabel.BackgroundTransparency = 1
 idLabel.TextColor3 = Color3.new(1, 1, 1)
 idLabel.Font = Enum.Font.Gotham
@@ -303,19 +389,9 @@ idLabel.TextSize = 14
 idLabel.TextWrapped = true
 idLabel.Text = "Server ID: \n" .. game.JobId
 
-local tutorL = Instance.new("TextLabel", idFrame)
-tutorL.Size = UDim2.new(1, -20, 0.6, 0)
-tutorL.Position = UDim2.new(0, 0, 0, -25)
-tutorL.BackgroundTransparency = 1
-tutorL.TextColor3 = Color3.new(1, 1, 1)
-tutorL.Font = Enum.Font.Gotham
-tutorL.TextSize = 14
-tutorL.TextWrapped = true
-tutorL.Text = "🔍V-Speed | X-SkyRise | Z-SkyFall" 
-
-local copyBtn = Instance.new("TextButton", idFrame)
-copyBtn.Size = UDim2.new(0.5, 0, 0.2, 0)
-copyBtn.Position = UDim2.new(0.25, 0, 0.75, 0)
+local copyBtn = Instance.new("TextButton", pages["Settings"])
+copyBtn.Size = UDim2.new(0.85, 0, 0.1, 0)
+copyBtn.Position = UDim2.new(0, 25, 0, 45)
 copyBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 255)
 copyBtn.TextColor3 = Color3.new(1, 1, 1)
 copyBtn.Font = Enum.Font.GothamBold
@@ -330,59 +406,9 @@ copyBtn.MouseButton1Click:Connect(function()
 	copyBtn.Text = "Copy"
 end)
 
-serverIdButton.MouseButton1Click:Connect(function()
-	idFrame.Visible = not idFrame.Visible
-end)
 
 
-local petToggle = Instance.new("TextButton", frame)
-petToggle.Size = UDim2.new(0, 32, 0, 32)
-petToggle.Position = UDim2.new(1, -64, 0, 2)
-petToggle.Text = "⚙️"
-petToggle.BackgroundColor3 = Color3.fromRGB(74, 29, 100)
-petToggle.TextColor3 = Color3.new(1,1,1)
-petToggle.Font = Enum.Font.GothamBold
-petToggle.TextSize = 16
-Instance.new("UICorner", petToggle).CornerRadius = UDim.new(0, 8)
 
-
-local closeButton = Instance.new("TextButton", frame)
-closeButton.Size = UDim2.new(0, 32, 0, 32)
-closeButton.Position = UDim2.new(1, -32, 0, 2)
-closeButton.Text = "✖"
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
-closeButton.BackgroundColor3 = Color3.fromRGB(120, 0, 180)
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
-closeButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
-end)
-
-local statusLabel = Instance.new("TextLabel", frame)
-statusLabel.Size = UDim2.new(1, -20, 0, 40)
-statusLabel.Position = UDim2.new(0, 10, 0, 40)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.TextWrapped = true
-statusLabel.Text = "🔍Waiting for Start"
-statusLabel.TextColor3 = Color3.fromRGB(230, 230, 255)
-statusLabel.Font = Enum.Font.GothamMedium
-statusLabel.TextSize = 20
-
-local petResultLabel = Instance.new("TextLabel", frame)
-petResultLabel.Size = UDim2.new(1, -20, 0, 100)
-petResultLabel.Position = UDim2.new(0, 10, 0, 85)
-petResultLabel.BackgroundTransparency = 1
-petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
-petResultLabel.TextWrapped = true
-petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
-petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petResultLabel.Font = Enum.Font.Gotham
-petResultLabel.TextSize = 20
-
--- RGB Pulse
 local function pulseRGB(obj)
 	spawn(function()
 		while obj and obj.Parent do
@@ -392,8 +418,51 @@ local function pulseRGB(obj)
 	end)
 end
 
-local petBeams = {}
-local playedSoundOnce = false
+
+local startButton = Instance.new("TextButton", pages["Main"])
+startButton.Size = UDim2.new(0, 200, 0, 36)
+startButton.Position = UDim2.new(0, 10, 0, 250)
+startButton.Text = "▶️ Start Hop"
+startButton.TextColor3 = Color3.new(1, 1, 1)
+startButton.Font = Enum.Font.GothamBold
+startButton.TextSize = 18
+startButton.BackgroundColor3 = Color3.fromRGB(55, 60, 109)
+startButton.BorderSizePixel = 0
+Instance.new("UICorner", startButton).CornerRadius = UDim.new(0, 8)
+
+local stopButton = Instance.new("TextButton", pages["Main"])
+stopButton.Size = UDim2.new(0, 150, 0, 36)
+stopButton.Position = UDim2.new(0, 210, 0, 250)
+stopButton.Text = "⏹ Stop"
+stopButton.TextColor3 = Color3.new(1, 1, 1)
+stopButton.Font = Enum.Font.GothamBold
+stopButton.TextSize = 18
+stopButton.BackgroundColor3 = Color3.fromRGB(66, 60, 109)
+Instance.new("UICorner", stopButton).CornerRadius = UDim.new(0, 8)
+
+stopButton.MouseButton1Click:Connect(function()
+	isRunning = false
+	saveHopStatus(false)
+	statusLabel.Text = "⏹ ServerHop Stopped"
+end)
+
+local autoHopButton = Instance.new("TextButton", pages["Main"])
+autoHopButton.Size = UDim2.new(1, -20, 0, 36)
+autoHopButton.Position = UDim2.new(0, 10, 1, -80)
+autoHopButton.Text = "🔄 AutoHop"
+autoHopButton.TextColor3 = Color3.new(1, 1, 1)
+autoHopButton.Font = Enum.Font.GothamBold
+autoHopButton.TextSize = 18
+autoHopButton.BackgroundColor3 = Color3.fromRGB(55, 60, 90)
+Instance.new("UICorner", autoHopButton).CornerRadius = UDim.new(0, 8)
+
+autoHopButton.MouseButton1Click:Connect(function()
+	isRunning = true
+	saveHopStatus(true)
+	statusLabel.Text = "🔄 AutoHop started"
+	wait(1)
+	teleportToNextServer()
+end)
 
 local function clearBeams()
 	for _, beam in ipairs(petBeams) do
@@ -413,6 +482,7 @@ local function getOrCreatePlayerAttachment()
 	end
 	return att
 end
+
 
 local function scanForPets()
 	clearBeams()
@@ -508,8 +578,6 @@ local function scanForPets()
 end
 
 
-
-
 spawn(function()
 	while true do
 		scanForPets()
@@ -531,7 +599,6 @@ local function hasWantedPets()
 end
 
 
-
 local function teleportToNextServer()
 	if not isRunning then
 		statusLabel.Text = "⏹ ServerHop Stopped"
@@ -543,19 +610,17 @@ local function teleportToNextServer()
 		url = url .. "&cursor=" .. HttpService:UrlEncode(foundAnything)
 	end
 
-
 	local success, response
-repeat
-	success, response = pcall(function()
-		return HttpService:JSONDecode(game:HttpGet(url))
-	end)
+	repeat
+		success, response = pcall(function()
+			return HttpService:JSONDecode(game:HttpGet(url))
+		end)
 
-	if not success then
-		statusLabel.Text = "⚠️ API Limit — retrying in 5s..."
-		wait(5)
-	end
-until success
-
+		if not success then
+			statusLabel.Text = "⚠️ API Limit — retrying in 5s..."
+			wait(5)
+		end
+	until success
 
 	if response.nextPageCursor then
 		foundAnything = response.nextPageCursor
@@ -591,10 +656,10 @@ until success
 				end
 
 				table.insert(AllIDs, id)
-				statusLabel.Text = "🌐 teleporting:\n" .. id
+				statusLabel.Text = "🌐 Teleporting to:\n" .. id
 				pcall(function()
 					writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-					TeleportService:TeleportToPlaceInstance(PlaceID, id, LocalPlayer)
+					TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
 				end)
 				wait(0.5)
 			end
@@ -602,116 +667,71 @@ until success
 	end
 end
 
-
-
-
-
-local startButton = Instance.new("TextButton", frame)
-startButton.Size = UDim2.new(0.7, 0, 0, 36)
-startButton.Position = UDim2.new(0.5, -170, 1, -46)
-startButton.Text = "▶️ Start Hop"
-startButton.TextColor3 = Color3.new(1, 1, 1)
-startButton.Font = Enum.Font.GothamBold
-startButton.TextSize = 18
-startButton.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
-Instance.new("UICorner", startButton).CornerRadius = UDim.new(0, 8)
-
 startButton.MouseButton1Click:Connect(function()
-	isRunning = true
-	saveHopStatus(true)
-	spawn(function()
-			while isRunning do
-		if hasWantedPets() then
-			statusLabel.Text = "✅ Pets Found! Stopping AutoHop"
-			isRunning = false
-			saveHopStatus(false)
-			break
-		end
-		statusLabel.Text = "🔁 Getting servers"
-		teleportToNextServer()
-		wait(5)
-	end
+	if isRunning then return end
 
+	isRunning = true
+	statusLabel.Text = "🔁 Starting AutoHop..."
+
+	spawn(function()
+		while isRunning do
+			if hasWantedPets() then
+				statusLabel.Text = "✅ Pets Found! Stopping AutoHop"
+				isRunning = false
+				break
+			end
+			statusLabel.Text = "🔁 Getting servers..."
+			teleportToNextServer()
+			wait(5)
+		end
 	end)
 end)
 
-local stopButton = Instance.new("TextButton", frame)
-stopButton.Size = UDim2.new(0.3, 0, 0, 36)
-stopButton.Position = UDim2.new(0.5, 65, 1, -46)
-stopButton.Text = "⏹ Stop"
-stopButton.TextColor3 = Color3.new(1, 1, 1)
-stopButton.Font = Enum.Font.GothamBold
-stopButton.TextSize = 18
-stopButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-Instance.new("UICorner", stopButton).CornerRadius = UDim.new(0, 8)
 
-stopButton.MouseButton1Click:Connect(function()
-	isRunning = false
-	saveHopStatus(false)
-	statusLabel.Text = "⏹ ServerHop Stopped"
-end)
+local petPanel = Instance.new("ScrollingFrame")
+petPanel.Size = UDim2.new(0, 350, 1, -20)
+petPanel.Position = UDim2.new(0, 10, 0, 10)
+petPanel.CanvasSize = UDim2.new(0, 0, 0, 0)
+petPanel.ScrollBarThickness = 4
+petPanel.ScrollBarImageColor3 = Color3.fromRGB(130, 80, 200) 
+petPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 45) 
+petPanel.BorderSizePixel = 0
+petPanel.ClipsDescendants = true
+petPanel.ZIndex = 1
+petPanel.Parent = pages["Pet Settings"]
 
-local autoHopButton = Instance.new("TextButton", frame)
-autoHopButton.Size = UDim2.new(1, -20, 0, 36)
-autoHopButton.Position = UDim2.new(0, 10, 1, -90)
-autoHopButton.Text = "🔄 AutoHop"
-autoHopButton.TextColor3 = Color3.new(1, 1, 1)
-autoHopButton.Font = Enum.Font.GothamBold
-autoHopButton.TextSize = 18
-autoHopButton.BackgroundColor3 = Color3.fromRGB(0, 255, 64)
-Instance.new("UICorner", autoHopButton).CornerRadius = UDim.new(0, 8)
-
-autoHopButton.MouseButton1Click:Connect(function()
-	isRunning = true
-	saveHopStatus(true)
-	statusLabel.Text = "🔄 AutoHop started"
-	wait(1)
-	teleportToNextServer()
-end)
-
-
-
-
-local petPanel = Instance.new("Frame")
-petPanel.Size = UDim2.new(0, 200, 0, 350)
-petPanel.Position = UDim2.new(1, 10, 0, 0)
-petPanel.BackgroundColor3 = Color3.fromRGB(16, 16, 40)
-petPanel.Visible = false
-petPanel.Parent = frame
 Instance.new("UICorner", petPanel).CornerRadius = UDim.new(0, 10)
-local stroke6 = Instance.new("UIStroke", petPanel)
-stroke6.Color = Color3.fromRGB(150, 50, 255)
-stroke6.Thickness = 1.5
 
-local y = 10
+local layout = Instance.new("UIListLayout", petPanel)
+layout.Padding = UDim.new(0, 6)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	petPanel.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+end)
+
 for name, state in pairs(petsToFind) do
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -10, 0, 24)
-	btn.Position = UDim2.new(0, 5, 0, y)
+	btn.Size = UDim2.new(1, -14, 0, 30) 
 	btn.Text = (state and "✅ " or "❌ ") .. name
-	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextColor3 = state and Color3.fromRGB(200, 255, 200) or Color3.fromRGB(255, 100, 120)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
-	btn.BackgroundColor3 = Color3.fromRGB(80, 30, 120)
+	btn.BackgroundColor3 = Color3.fromRGB(80, 50, 150)
+	btn.BorderSizePixel = 0
 	btn.Parent = petPanel
+
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-	y = y + 28
 
 	btn.MouseButton1Click:Connect(function()
 		petsToFind[name] = not petsToFind[name]
 		btn.Text = (petsToFind[name] and "✅ " or "❌ ") .. name
+		btn.TextColor3 = petsToFind[name] and Color3.fromRGB(200, 255, 200) or Color3.fromRGB(255, 100, 120)
 		savePetSettings()
 	end)
 end
 
-petToggle.MouseButton1Click:Connect(function()
-	petPanel.Visible = not petPanel.Visible
-end)
-
-frame:GetPropertyChangedSignal("Position"):Connect(function()
-	petPanel.Position = UDim2.new(1, 10, 0, 0)
-end)
-
+--esp
 local function teleportToSky()
   hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
   print("skyrise")
@@ -841,4 +861,3 @@ if loadHopStatus() then
 		end
 	end)
 end
-
