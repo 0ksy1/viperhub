@@ -456,13 +456,6 @@ autoHopButton.TextSize = 18
 autoHopButton.BackgroundColor3 = Color3.fromRGB(55, 60, 90)
 Instance.new("UICorner", autoHopButton).CornerRadius = UDim.new(0, 8)
 
-autoHopButton.MouseButton1Click:Connect(function()
-	isRunning = true
-	saveHopStatus(true)
-	statusLabel.Text = "🔄 AutoHop started"
-	wait(1)
-	teleportToNextServer()
-end)
 
 local function clearBeams()
 	for _, beam in ipairs(petBeams) do
@@ -601,71 +594,67 @@ end
 
 local function teleportToNextServer()
 	if not isRunning then
-		statusLabel.Text = "⏹ ServerHop Stopped"
+		statusLabel.Text = "⏹ AutoHop Stopped"
 		return
 	end
 
-	local url = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-	if foundAnything ~= "" then
-		url = url .. "&cursor=" .. HttpService:UrlEncode(foundAnything)
-	end
+	statusLabel.Text = "🔁 Searching servers..."
+	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+	local cursor = ""
+	local attemptedServers = {}
 
-	local success, response
-	repeat
-		success, response = pcall(function()
+	while isRunning do
+		local url = baseURL .. (cursor ~= "" and "&cursor=" .. HttpService:UrlEncode(cursor) or "")
+		local success, response = pcall(function()
 			return HttpService:JSONDecode(game:HttpGet(url))
 		end)
 
-		if not success then
-			statusLabel.Text = "⚠️ API Limit — retrying in 5s..."
-			wait(5)
-		end
-	until success
+		if success and response and response.data then
+			cursor = response.nextPageCursor or ""
 
-	if response.nextPageCursor then
-		foundAnything = response.nextPageCursor
-	end
+			for _, server in ipairs(response.data) do
+				if not isRunning then return end
 
-	local num = 0
-	for _, v in pairs(response.data) do
-		if not isRunning then
-			statusLabel.Text = "⏹ ServerHop Cancelled"
-			return
-		end
+				local id = tostring(server.id)
+				local alreadyTried = table.find(AllIDs, id) or attemptedServers[id]
 
-		local id = tostring(v.id)
-		local possible = true
+				if server.playing < server.maxPlayers and not alreadyTried then
+					table.insert(AllIDs, id)
+					attemptedServers[id] = true
 
-		if v.playing < v.maxPlayers then
-			for _, existing in pairs(AllIDs) do
-				if num ~= 0 and id == tostring(existing) then
-					possible = false
-				elseif num == 0 and tonumber(actualHour) ~= tonumber(existing) then
+					statusLabel.Text = "🌐 Teleporting to:\n" .. id
 					pcall(function()
-						delfile("NotSameServers.json")
+						writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+						TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
 					end)
-					AllIDs = { actualHour }
+
+					wait(0.3) 
 				end
-				num += 1
 			end
 
-			if possible then
-				if not isRunning then
-					statusLabel.Text = "⏹ ServerHop Cancelled Before Teleport"
-					return
-				end
-
-				table.insert(AllIDs, id)
-				statusLabel.Text = "🌐 Teleporting to:\n" .. id
-				pcall(function()
-					writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-					TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
-				end)
+			if not cursor then
+			
+				statusLabel.Text = "♻️ All servers tried. Resetting history..."
+				pcall(function() delfile("NotSameServers.json") end)
+				AllIDs = { actualHour }
+				writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+				cursor = ""
 				wait(0.5)
 			end
+		else
+			statusLabel.Text = "⚠️ Failed to fetch servers. Retrying..."
+			wait(3)
 		end
 	end
 end
+
+autoHopButton.MouseButton1Click:Connect(function()
+	isRunning = true
+	saveHopStatus(true)
+	statusLabel.Text = "🔄 AutoHop started"
+	teleportToNextServer()
+end)
+
 
 startButton.MouseButton1Click:Connect(function()
 	if isRunning then return end
