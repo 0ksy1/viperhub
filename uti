@@ -10,6 +10,8 @@ local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local HRP = Character:WaitForChild("HumanoidRootPart")
 
+
+
 -- === Find DeliveryHitbox ===
 local myPlot
 for _, plot in pairs(Workspace:WaitForChild("Plots"):GetChildren()) do
@@ -42,12 +44,29 @@ gui.Name = "BypassTPGui"
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 320, 0, 200)
+frame.Size = UDim2.new(0, 300, 0, 180)
 frame.Position = UDim2.new(0.5, -160, 0.5, -100)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 frame.BorderSizePixel = 2
 frame.BorderColor3 = Color3.fromRGB(100, 0, 200)
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+-- === Top Navbar ===
+local navbar = Instance.new("Frame", frame)
+navbar.Size = UDim2.new(1, 0, 0, 40)
+navbar.Position = UDim2.new(0, 0, 0, 0)
+navbar.BackgroundColor3 = Color3.fromRGB(30, 30, 25)
+navbar.BorderSizePixel = 0
+Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel", navbar)
+title.Size = UDim2.new(1, -10, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "viperhub insta stealer"
+title.Font = Enum.Font.FredokaOne
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
 
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 3
@@ -65,17 +84,17 @@ end)
 
 local label = Instance.new("TextLabel", frame)
 label.Size = UDim2.new(1, -20, 0, 40)
-label.Position = UDim2.new(0, 10, 0, 10)
+label.Position = UDim2.new(0, 10, 0, 60)
 label.BackgroundTransparency = 1
 label.TextColor3 = Color3.new(1, 1, 1)
 label.Font = Enum.Font.GothamBold
-label.TextSize = 16
+label.TextSize = 20
 label.Text = "⏹ Teleport Stopped"
 label.TextWrapped = true
 
 local startBtn = Instance.new("TextButton", frame)
-startBtn.Size = UDim2.new(0.7, -10, 0, 40)
-startBtn.Position = UDim2.new(0.05, -10, 0, 150)
+startBtn.Size = UDim2.new(1, -10, 0, 40)
+startBtn.Position = UDim2.new(0.05, -10, 0, 120)
 startBtn.Text = "Steal"
 startBtn.BackgroundColor3 = Color3.fromRGB(120, 70, 200)
 startBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -83,35 +102,15 @@ startBtn.Font = Enum.Font.GothamBold
 startBtn.TextSize = 16
 Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 8)
 
-local stopBtn = Instance.new("TextButton", frame)
-stopBtn.Size = UDim2.new(0.35, -10, 0, 40)
-stopBtn.Position = UDim2.new(0.35, 100, 0, 150)
-stopBtn.Text = "Stop"
-stopBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 100)
-stopBtn.TextColor3 = Color3.new(1, 1, 1)
-stopBtn.Font = Enum.Font.GothamBold
-stopBtn.TextSize = 16
-Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 8)
-
-local standBtn = Instance.new("TextButton", frame)
-standBtn.Size = UDim2.new(0.9, -10, 0, 35)
-standBtn.Position = UDim2.new(0.05, 0, 0, 90)
-standBtn.Text = "Fix Character"
-standBtn.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-standBtn.TextColor3 = Color3.new(1, 1, 1)
-standBtn.Font = Enum.Font.GothamBold
-standBtn.TextSize = 16
-Instance.new("UICorner", standBtn).CornerRadius = UDim.new(0, 8)
-
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(0, 28, 0, 28)
 closeBtn.Position = UDim2.new(1, -34, 0, 6)
 closeBtn.Text = "✖"
-closeBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 55)
+closeBtn.TextColor3 = Color3.new(255, 0, 0)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 16
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0.2, 0)
 
 -- === Draggable GUI ===
 local dragging, dragInput, dragStart, startPos
@@ -168,39 +167,31 @@ local function teleportBypass()
 	if running then return end
 	running = true
 	label.Text = "🚀 Stealing..."
-	freeze()
 
-	for i = 1, 10 do
-		if not running then break end
-		HRP.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0)
-		task.wait(0.05)
-	end
+	local targetCFrame = targetPart.CFrame * CFrame.new(0, -2, 0)
+    local voidCFrame = CFrame.new(0, -2.6728737272937e+38, 0)
+    local spamTime = 0.3
+    local startTime = tick()
 
-	if running then
-		HRP.CFrame = CFrame.new(0, -3e40, 0)
-		task.wait(0.05)
-	end
+	local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if tick() - startTime < spamTime then
+            HRP.CFrame = targetCFrame
+        else
+            connection:Disconnect()
+            HRP.CFrame = voidCFrame
+            task.wait(0.1)
+            HRP.CFrame = targetCFrame
+        end
+    end)
 
-	if running then
-		HRP.CFrame = targetPart.CFrame + Vector3.new(0, 0, 0)
-	end
-
-	label.Text = running and "✅ Steal Complete!" or "⏹ Steal Stopped"
-	unfreeze()
+    label.Text = running and "✅ Steal Complete!" or "⏹ Steal Stopped"
 	running = false
 end
 
-startBtn.MouseButton1Click:Connect(teleportBypass)
-stopBtn.MouseButton1Click:Connect(function()
-	running = false
-	label.Text = "⏹ Steal Stopped"
-	unfreeze()
-end)
 
-standBtn.MouseButton1Click:Connect(function()
-	unfreeze()
-	label.Text = "Forced Stand Executed"
-end)
+
+startBtn.MouseButton1Click:Connect(teleportBypass)
 
 closeBtn.MouseButton1Click:Connect(function()
 	gui:Destroy()
