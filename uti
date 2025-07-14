@@ -186,6 +186,7 @@ local function teleportBypass()
 	end
 
 	label.Text = running and "✅ Steal Complete!" or "⏹ Steal Stopped"
+	unfreeze()
 	running = false
 end
 
