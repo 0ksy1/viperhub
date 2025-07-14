@@ -753,7 +753,7 @@ local function teleportToNextServer()
 			end
 		else
 			statusLabel.Text = "⚠️ Failed to fetch servers. Retrying..."
-			wait(3)
+			wait(5)
 		end
 	end
 end
