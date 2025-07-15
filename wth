@@ -151,7 +151,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🐾 Pet Logger"
+title.Text = "Pets Found"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -172,7 +172,7 @@ message.ZIndex = 6
 message.Parent = container
 
 function showPetNotification(petName)
-	message.Text = "✅ Pet Found - " .. petName
+	message.Text = petName
 	container.Visible = true
 	container.Position = UDim2.new(0, 20, 1, 120)
 
@@ -360,7 +360,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.23 Poor EDITION"
+title.Text = "viperhub v2.25 Jmot EDITION"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
