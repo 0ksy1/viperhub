@@ -1,3 +1,4 @@
 Nativity222=0
 Argus=0.5
 barbos = 0.5
+mokaka222 = 4
