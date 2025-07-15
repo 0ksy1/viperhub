@@ -210,7 +210,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-    local versionOS = "v2.23 Poor EDITION"
+    local versionOS = "v2.25 No-Money EDITION"
 	
 
     local rawContent =
