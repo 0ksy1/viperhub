@@ -1,3 +1,5 @@
 Nativity222=0
 yatvoyrotebaluebak=4
 Monkeyboy=1
+Barbusito=4
+Gargushub=0.5
