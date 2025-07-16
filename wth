@@ -151,7 +151,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Pets Found"
+title.Text = "😈Pets Found"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -210,11 +210,11 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-    local versionOS = "v2.25 No-Money EDITION"
+    local versionOS = "v2.3 DEV EDITION"
 	
 
     local rawContent =
-        "\n\n**━━━━━━━━━━━━━━━🐾━━━━━━━━━━━━━━━**\n\n" ..
+        "\n\n**━━━━━━━━━━━━━━━@here━━━━━━━━━━━━━━━**\n\n" ..
         "**😎 MrLogger found some pets!** `" .. versionOS .. "`\n\n" ..
         "**📦 Pets:**\n" .. 
         "💎 " .. petLines .. "\n\n" ..
@@ -360,7 +360,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.25 Jmot EDITION"
+title.Text = "viperhub v2.3 DEV Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -554,17 +554,25 @@ statusLabel.TextSize = 16
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextWrapped = true
 
-local petResultLabel = Instance.new("TextLabel", pages["Main"])
-petResultLabel.Size = UDim2.new(1, -20, 0, 100)
-petResultLabel.Position = UDim2.new(0, 10, 0, 50)
-petResultLabel.BackgroundTransparency = 1
-petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
-petResultLabel.TextWrapped = true
-petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
-petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petResultLabel.Font = Enum.Font.Gotham
-petResultLabel.TextSize = 15
+local petResultFrame = Instance.new("ScrollingFrame", pages["Main"])
+petResultFrame.Name = "PetResultFrame"
+petResultFrame.Size = UDim2.new(1, -20, 0, 120)
+petResultFrame.Position = UDim2.new(0, 10, 0, 50)
+petResultFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+petResultFrame.ScrollBarThickness = 6
+petResultFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+petResultFrame.BackgroundTransparency = 0.15
+petResultFrame.BorderSizePixel = 0
+petResultFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+petResultFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+
+local layout = Instance.new("UIListLayout", petResultFrame)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 4)
+
+local corner = Instance.new("UICorner", petResultFrame)
+corner.CornerRadius = UDim.new(0, 8)
+
 
 local idLabel = Instance.new("TextLabel", pages["Settings"])
 idLabel.Size = UDim2.new(1, -20, 0.6, 0)
@@ -702,14 +710,18 @@ local function getMutationMap()
 				local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
 				local displayName = overhead and overhead:FindFirstChild("DisplayName")
 				local mutation = overhead and overhead:FindFirstChild("Mutation")
+				local generation = overhead and overhead:FindFirstChild("Generation")
 
 				if spawn and displayName and displayName:IsA("TextLabel") then
 					local name = displayName.Text
 					local mutationText = (mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None") and mutation.Text or nil
+					local generationText = (generation and generation:IsA("TextLabel")) and generation.Text or "Unknown"
+
 					table.insert(mutationMap, {
 						name = name,
 						position = spawn.Position,
-						mutation = mutationText
+						mutation = mutationText,
+						generation = generationText
 					})
 				end
 			end
@@ -734,15 +746,19 @@ local function scanForPets()
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
 
-
+					-- 📌 Получаем mutation и generation
 					local mutationType = nil
+					local generationText = "Unknown"
+
 					for _, data in ipairs(mutationData) do
 						if string.lower(data.name) == string.lower(obj.Name) and (data.position - root.Position).Magnitude < 5 then
 							mutationType = data.mutation
+							generationText = data.generation
 							break
 						end
 					end
 
+					-- 🏷️ BillboardGui
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -758,12 +774,19 @@ local function scanForPets()
 						label.TextStrokeTransparency = 0.5
 						label.TextScaled = true
 						label.Font = Enum.Font.GothamBold
-						label.Text = obj.Name .. (mutationType and (" 🧬" .. mutationType) or "")
+
+						local labelText = ""
+						if mutationType then
+							labelText = "⭐️" .. mutationType .. "⭐️ "
+						end
+						labelText = labelText .. obj.Name .. " - " .. generationText .. " ✅  "
+						label.Text = labelText
 						label.Parent = tag
 
 						pulseRGB(label)
 					end
 
+					-- 🔗 Beam
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -789,20 +812,45 @@ local function scanForPets()
 					end)
 
 					table.insert(petBeams, beam)
-					foundCount[obj.Name .. (mutationType and " 🧬" .. mutationType or " ")] = (foundCount[obj.Name] or 0) + 1
+
+					-- 🧾 Подсчёт
+					local key = (mutationType and "⭐️" .. mutationType .. "⭐️ " or "") .. obj.Name .. " - " .. generationText .. "✅"
+					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
 				end
 			end
 		end
 	end
 
+	-- 📤 Результаты в GUI
+	-- Очистка старых
+	for _, child in ipairs(petResultFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+
 	if next(foundCount) then
 		local displayLines = {}
+
 		for name, count in pairs(foundCount) do
-			table.insert(displayLines, name .. " (x" .. count .. ")")
+			local fullText = name .. " (x" .. count .. ")"
+
+			-- Добавить в ScrollFrame
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.new(1, -10, 0, 22)
+			label.BackgroundTransparency = 1
+			label.TextColor3 = Color3.fromRGB(240, 240, 240)
+			label.Font = Enum.Font.Gotham
+			label.TextSize = 14
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Text = fullText
+			label.Parent = petResultFrame
+
+			table.insert(displayLines, fullText)
 		end
-		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
-        showPetNotification(table.concat(displayLines, "\n"))
+
+		showPetNotification(table.concat(displayLines, "\n"))
 
 		if not playedSoundOnce then
 			playedSoundOnce = true
@@ -816,9 +864,20 @@ local function scanForPets()
 
 		autoBuyEnabledItems()
 	else
-		petResultLabel.Text = "❌ Found pets: none"
+		-- Ничего не найдено
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, -10, 0, 22)
+		label.BackgroundTransparency = 1
+		label.TextColor3 = Color3.fromRGB(180, 180, 180)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = "❌ Found pets: none"
+		label.Parent = petResultFrame
 	end
 end
+
+
 
 
 spawn(function()
@@ -1338,3 +1397,4 @@ if loadHopStatus() then
 		end
 	end)
 end
+
