@@ -53,7 +53,7 @@ local petsToFind = {
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1391128950528544939/VWErk11Lc0cscGb6RMRFkbu_XpK3WQ_cuFU7GgRipHGHDLqgqiLmhBLigrO7oOB-RZnK" 
+local webhookUrl = "https://discord.com/api/webhooks/1395422166245179494/leAcOimcsrk_PFqJPaPzTybdie3zBTSdXaEaHSN7Fwlqau4TA1mFzNzjOvFy-dSlORYq" 
 
 local playedSoundOnce = false
 local petBeams = {}
