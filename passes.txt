@@ -3,5 +3,5 @@ yatvoyrotebaluebak=4
 Monkeyboy=1
 Barbusito=4
 Gargushub=0.5
-JadinaJmotIMras=168
 MotoMoto229=168
+Abobyklox=120
