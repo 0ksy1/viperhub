@@ -1374,7 +1374,7 @@ createUtilButton("🥩 Rejoin Server", Color3.fromRGB(120, 80, 200), function()
 end, "rejoin")
 
 createUtilButton("😈STEAL - ARBIXHUB", Color3.fromRGB(120, 80, 200), function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/THXZ1N.lua"))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/Arbixhub-obfuscated.lua"))()
 end, "instasteal")
 
 createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
