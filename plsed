@@ -49,7 +49,7 @@ local petsToFind = {
     	    ["Pot Hotspot"] = true,
     	    ["Las Tralaleritas"] = true,
     	    ["Lucky Block"] = true,
-          ["Nuclearo Dinossauro"] = true
+	    ["Nuclearo Dinossauro"] = true
 }
 
 local HttpService = game:GetService("HttpService")
@@ -153,7 +153,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "😈Pets Found!"
+title.Text = "😈Pets Found"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -194,6 +194,91 @@ function showPetNotification(petName)
 end
 
 
+
+
+
+
+
+
+
+
+--hook
+local function sendWebhook(foundPets, distance)
+	if webhookUrl == "" or #foundPets == 0 then return end
+
+	local player = Players.LocalPlayer
+	local serverLink = "roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. game.JobId
+	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
+	local serverPlayerCount = #Players:GetPlayers()
+	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+	local versionOS = "v2.37 I have yes money EDITION"
+
+	local petLines = ""
+	for _, petText in ipairs(foundPets) do
+		petLines = petLines .. petText .. " \n"
+	end
+
+	local embed = {
+		title = "━━━━━━━━━━━━━━━@here━━━━━━━━━━━━━━━",
+		description =
+			"😎 **MrLogger found some pets!** `" .. versionOS .. "`\n\n" ..
+			"**📦 Pets:**\n" .. petLines .. "\n" ..
+			"**👤 Explorer:** `" .. player.Name .. "`\n" ..
+			"**👥 Players:** `" .. serverPlayerCount .. "`\n" ..
+			"**⏰ Time:** `" .. timestamp .. "`\n\n" ..
+			"**🚀 Server Link:**\n" .. serverLink .. "\n\n" ..
+			"**📄 Job ID:**\n`" .. game.JobId .. "`\n\n" ..
+			"**💻 Join Script:**\n```lua\n" .. joinScript .. "\n```\n" ..
+			"━━━━━━━━━━━━━━━✅━━━━━━━━━━━━━━━",
+		color = 14177041 
+	}
+
+	local payload = {
+		["username"] = "😈MrLogger",
+		["content"] = "@here", 
+		["embeds"] = {embed}
+	}
+
+	local json = HttpService:JSONEncode(payload)
+
+	local request = (syn and syn.request) or (http and http.request) or http_request or request
+	if request then
+		pcall(function()
+			request({
+				Url = webhookUrl,
+				Method = "POST",
+				Headers = {
+					["Content-Type"] = "application/json"
+				},
+				Body = json
+			})
+		end)
+	end
+end
+
+
+
+
+local function loadHopStatus()
+	local success, result = pcall(function()
+		return HttpService:JSONDecode(readfile("ServerHopActive.json"))
+	end)
+	if success and typeof(result) == "boolean" then
+		return result
+	else
+		writefile("ServerHopActive.json", HttpService:JSONEncode(false))
+		return false
+	end
+end
+
+local function saveHopStatus(value)
+	writefile("ServerHopActive.json", HttpService:JSONEncode(value))
+end
+
+local isRunning = loadHopStatus()
+
+
+
 local function updateSpeed()
 	humanoid.WalkSpeed = isEnabled and speedValue or defaultSpeed
 end
@@ -228,80 +313,6 @@ updateSpeed()
 
 
 
-
-
---hook
-local function sendWebhook(foundPets, distance)
-	if webhookUrl == "" or #foundPets == 0 then return end
-
-	local player = Players.LocalPlayer
-	local petLines = table.concat(foundPets, "\n")
-	local serverLink = "roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. game.JobId
-	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
-	local serverPlayerCount = #Players:GetPlayers()
-	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-    local versionOS = "v2.35 Yes Money EDITION"
-	
-
-    local rawContent =
-        "\n\n**━━━━━━━━━━━━━━━🐾━━━━━━━━━━━━━━━**\n\n" ..
-        "**😎 MrLogger found some pets!** `" .. versionOS .. "`\n\n" ..
-        "**📦 Pets:**\n" .. 
-	"@here\n" .. 
-        "💎 " .. petLines .. "\n\n" ..
-        (distance and ("**📏 Distance:** `" .. math.floor(distance * 10) / 10 .. " studs`\n\n") or "") ..
-        "**👤 Explorer:** `" .. player.Name .. "`\n" ..
-        "**👥 Players:** `" .. serverPlayerCount .. "`\n" ..
-        "**⏰ Time:** `" .. timestamp .. "`\n\n" ..
-        "**🚀 Server Link:**\n" .. serverLink .. "\n" ..
-        "**📄 Job ID:**\n`" .. game.JobId .. "`\n" ..
-        "**💻 Join Script:**\n```lua\n" .. joinScript .. "\n```" ..
-        "\n**━━━━━━━━━━━━━━━✅━━━━━━━━━━━━━━━**"
-
-
-    local contentWithQuotes = "'" .. rawContent .. "'"
-
-
-	local data = {
-		["content"] = rawContent,
-		["username"] = "Pet Scanner"
-	}
-
-	local json = HttpService:JSONEncode(data)
-
-	local request = (syn and syn.request) or (http and http.request) or http_request or request
-	if request then
-		pcall(function()
-			request({
-				Url = webhookUrl,
-				Method = "POST",
-				Headers = {["Content-Type"] = "application/json"},
-				Body = json
-			})
-		end)
-	end
-end
-
-
-
-
-local function loadHopStatus()
-	local success, result = pcall(function()
-		return HttpService:JSONDecode(readfile("ServerHopActive.json"))
-	end)
-	if success and typeof(result) == "boolean" then
-		return result
-	else
-		writefile("ServerHopActive.json", HttpService:JSONEncode(false))
-		return false
-	end
-end
-
-local function saveHopStatus(value)
-	writefile("ServerHopActive.json", HttpService:JSONEncode(value))
-end
-
-local isRunning = loadHopStatus()
 
 local function loadPetSettings()
 	local success, result = pcall(function()
@@ -374,7 +385,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.35 Yes Money Edition"
+title.Text = "viperhub v2.37 Yes Money Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -568,17 +579,25 @@ statusLabel.TextSize = 16
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextWrapped = true
 
-local petResultLabel = Instance.new("TextLabel", pages["Main"])
-petResultLabel.Size = UDim2.new(1, -20, 0, 100)
-petResultLabel.Position = UDim2.new(0, 10, 0, 50)
-petResultLabel.BackgroundTransparency = 1
-petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
-petResultLabel.TextWrapped = true
-petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
-petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petResultLabel.Font = Enum.Font.Gotham
-petResultLabel.TextSize = 15
+local petResultFrame = Instance.new("ScrollingFrame", pages["Main"])
+petResultFrame.Name = "PetResultFrame"
+petResultFrame.Size = UDim2.new(1, -20, 0, 120)
+petResultFrame.Position = UDim2.new(0, 10, 0, 50)
+petResultFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+petResultFrame.ScrollBarThickness = 6
+petResultFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+petResultFrame.BackgroundTransparency = 0.15
+petResultFrame.BorderSizePixel = 0
+petResultFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+petResultFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+
+local layout = Instance.new("UIListLayout", petResultFrame)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 4)
+
+local corner = Instance.new("UICorner", petResultFrame)
+corner.CornerRadius = UDim.new(0, 8)
+
 
 local idLabel = Instance.new("TextLabel", pages["Settings"])
 idLabel.Size = UDim2.new(1, -20, 0.6, 0)
@@ -716,14 +735,18 @@ local function getMutationMap()
 				local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
 				local displayName = overhead and overhead:FindFirstChild("DisplayName")
 				local mutation = overhead and overhead:FindFirstChild("Mutation")
+				local generation = overhead and overhead:FindFirstChild("Generation")
 
 				if spawn and displayName and displayName:IsA("TextLabel") then
 					local name = displayName.Text
 					local mutationText = (mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None") and mutation.Text or nil
+					local generationText = (generation and generation:IsA("TextLabel")) and generation.Text or "Unknown"
+
 					table.insert(mutationMap, {
 						name = name,
 						position = spawn.Position,
-						mutation = mutationText
+						mutation = mutationText,
+						generation = generationText
 					})
 				end
 			end
@@ -748,15 +771,19 @@ local function scanForPets()
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
 
-
+					-- 📌 Получаем mutation и generation
 					local mutationType = nil
+					local generationText = "Unknown"
+
 					for _, data in ipairs(mutationData) do
 						if string.lower(data.name) == string.lower(obj.Name) and (data.position - root.Position).Magnitude < 5 then
 							mutationType = data.mutation
+							generationText = data.generation
 							break
 						end
 					end
 
+					-- 🏷️ BillboardGui
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -772,12 +799,19 @@ local function scanForPets()
 						label.TextStrokeTransparency = 0.5
 						label.TextScaled = true
 						label.Font = Enum.Font.GothamBold
-						label.Text = obj.Name .. (mutationType and (" 🧬" .. mutationType) or "")
+
+						local labelText = ""
+						if mutationType then
+							labelText = "⭐️" .. mutationType .. "⭐️ "
+						end
+						labelText = labelText .. obj.Name .. " - " .. generationText .. "  ✅   "
+						label.Text = labelText
 						label.Parent = tag
 
 						pulseRGB(label)
 					end
 
+					-- 🔗 Beam
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -803,20 +837,43 @@ local function scanForPets()
 					end)
 
 					table.insert(petBeams, beam)
-					foundCount[obj.Name .. (mutationType and " 🧬" .. mutationType or " ")] = (foundCount[obj.Name] or 0) + 1
+
+					-- 🧾 Подсчёт
+					local key = (mutationType and "⭐️" .. mutationType .. "⭐️ " or "") .. obj.Name .. " - " .. generationText .. " ✅ "
+					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
 				end
 			end
 		end
 	end
 
+	for _, child in ipairs(petResultFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+
 	if next(foundCount) then
 		local displayLines = {}
+
 		for name, count in pairs(foundCount) do
-			table.insert(displayLines, name .. " (x" .. count .. ")")
+			local fullText = name .. " (x" .. count .. ")"
+
+			-- Добавить в ScrollFrame
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.new(1, -10, 0, 22)
+			label.BackgroundTransparency = 1
+			label.TextColor3 = Color3.fromRGB(240, 240, 240)
+			label.Font = Enum.Font.Gotham
+			label.TextSize = 14
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Text = fullText
+			label.Parent = petResultFrame
+
+			table.insert(displayLines, fullText)
 		end
-		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
-        showPetNotification(table.concat(displayLines, "\n"))
+
+		showPetNotification(table.concat(displayLines, "\n"))
 
 		if not playedSoundOnce then
 			playedSoundOnce = true
@@ -830,9 +887,20 @@ local function scanForPets()
 
 		autoBuyEnabledItems()
 	else
-		petResultLabel.Text = "❌ Found pets: none"
+		-- Ничего не найдено
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, -10, 0, 22)
+		label.BackgroundTransparency = 1
+		label.TextColor3 = Color3.fromRGB(180, 180, 180)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = "❌ Found pets: none"
+		label.Parent = petResultFrame
 	end
 end
+
+
 
 
 spawn(function()
@@ -863,12 +931,12 @@ local function teleportToNextServer()
 	end
 
 	statusLabel.Text = "🔁 Searching servers..."
-	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=25"
 	local cursor = ""
 	local attemptedServers = {}
 	local failAttempts = 0
 	local serverCount = 0
-	local totalServersInBatch = 100
+	local totalServersInBatch = 25
 
   local cachedServers = {}
   local currentIndex = 1
@@ -1005,175 +1073,6 @@ startButton.MouseButton1Click:Connect(function()
 end)
 
 
-local function teleportToSky()
-	if hrp then
-		hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
-		print("skyrise")
-	end
-end
-
-local function stepOffSkyPlatform()
-	if hrp then
-		local currentY = hrp.Position.Y
-		hrp.CFrame = CFrame.new(hrp.Position.X, currentY - dropDistance, hrp.Position.Z)
-		print("⏬skyfall")
-	end
-end
-
-local function createESP(char, tag)
-	if not char:FindFirstChild(tag) then
-		local highlight = Instance.new("Highlight")
-		highlight.Name = tag
-		highlight.FillColor = Color3.fromRGB(255, 0, 0)
-		highlight.FillTransparency = 0.5
-		highlight.OutlineColor = Color3.new(1, 1, 1)
-		highlight.OutlineTransparency = 0
-		highlight.Adornee = char
-		highlight.Parent = char
-	end
-end
-
-local function removeESP(char, tag)
-	local esp = char:FindFirstChild(tag)
-	if esp then esp:Destroy() end
-end
-
-local function createMarker(root)
-	if not root:FindFirstChild("AntiInvisMarker") then
-		local marker = Instance.new("BillboardGui")
-		marker.Name = "AntiInvisMarker"
-		marker.Adornee = root
-		marker.Size = UDim2.new(0, 100, 0, 40)
-		marker.AlwaysOnTop = true
-		marker.StudsOffset = Vector3.new(0, 3, 0)
-		marker.Parent = root
-
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.BackgroundTransparency = 1
-		label.Text = "👻 Hidden Player"
-		label.TextColor3 = Color3.new(1, 0, 0)
-		label.TextScaled = true
-		label.Font = Enum.Font.GothamBold
-		label.Parent = marker
-	end
-end
-
-local function removeMarker(root)
-	local m = root:FindFirstChild("AntiInvisMarker")
-	if m then m:Destroy() end
-end
-
-local function isInvisible(char)
-	for _, part in pairs(char:GetDescendants()) do
-		if part:IsA("BasePart") and part.Transparency < 0.98 and part.Name ~= "HumanoidRootPart" then
-			return false
-		end
-	end
-	return true
-end
-
-local function updateESP()
-	for _, player in pairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer then
-			local char = player.Character
-			if char and char:IsDescendantOf(workspace) then
-				local root = char:FindFirstChild("HumanoidRootPart")
-				local invis = isInvisible(char)
-
-				if espAllEnabled then
-					createESP(char, "ESP_All")
-				else
-					removeESP(char, "ESP_All")
-				end
-
-				if espInvisEnabled and invis then
-					createESP(char, "ESP_Invis")
-					if root then createMarker(root) end
-				else
-					removeESP(char, "ESP_Invis")
-					if root then removeMarker(root) end
-				end
-			end
-		end
-	end
-end
-
-RunService.Stepped:Connect(function()
-	if espInvisEnabled or espAllEnabled then
-		updateESP()
-	end
-end)
-
--- === Button Generator ===
-
-local function createUtilButton(text, color, callback, id)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -10, 0, 40)
-	btn.Text = text
-	btn.BackgroundColor3 = color
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 16
-	btn.BorderSizePixel = 0
-	btn.TextXAlignment = Enum.TextXAlignment.Left
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-	local dropButton = Instance.new("TextButton", btn)
-	dropButton.Size = UDim2.new(0, 24, 0, 24)
-	dropButton.Position = UDim2.new(1, -28, 0.5, -12)
-	dropButton.Text = "⚙️"
-	dropButton.TextSize = 14
-	dropButton.Font = Enum.Font.Gotham
-	dropButton.TextColor3 = Color3.new(1,1,1)
-	dropButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
-	Instance.new("UICorner", dropButton).CornerRadius = UDim.new(0, 6)
-
-	local toggleContainer = Instance.new("Frame")
-	toggleContainer.Size = UDim2.new(1, -10, 0, 24)
-	toggleContainer.BackgroundTransparency = 1
-	toggleContainer.ZIndex = 10
-	toggleContainer.Visible = false
-	toggleContainer.Parent = scroll
-
-	local toggle = Instance.new("TextButton", toggleContainer)
-	toggle.Size = UDim2.new(1, 0, 1, 0)
-	toggle.Text = (autoExecStates[id] and "✅ AutoExecute" or "❌ AutoExecute")
-	toggle.TextColor3 = autoExecStates[id] and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
-	toggle.Font = Enum.Font.Gotham
-	toggle.TextSize = 14
-	toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-	toggle.BorderSizePixel = 0
-	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
-
-	dropButton.MouseButton1Click:Connect(function()
-		toggleContainer.Visible = not toggleContainer.Visible
-		toggleContainer.Position = UDim2.new(0, btn.Position.X.Offset, 0, btn.Position.Y.Offset + btn.Size.Y.Offset)
-	end)
-
-	toggle.MouseButton1Click:Connect(function()
-		autoExecStates[id] = not autoExecStates[id]
-		toggle.Text = (autoExecStates[id] and "✅ AutoExecute" or "❌ AutoExecute")
-		toggle.TextColor3 = autoExecStates[id] and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
-		saveAutoExecStates()
-	end)
-
-	btn.MouseEnter:Connect(function()
-		btn.BackgroundColor3 = color:lerp(Color3.new(1, 1, 1), 0.2)
-	end)
-	btn.MouseLeave:Connect(function()
-		btn.BackgroundColor3 = color
-	end)
-
-	btn.MouseButton1Click:Connect(callback)
-	btn.Parent = scroll
-end
-
-
-
-
-
-
 local petPanel = Instance.new("ScrollingFrame")
 petPanel.Size = UDim2.new(0, 350, 1, -20)
 petPanel.Position = UDim2.new(0, 10, 0, 10)
@@ -1216,6 +1115,123 @@ for name, state in pairs(petsToFind) do
 		savePetSettings()
 	end)
 end
+
+--esp
+local function teleportToSky()
+  hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
+  print("skyrise")
+end
+
+local function stepOffSkyPlatform()
+  local currentY = hrp.Position.Y
+  hrp.CFrame = CFrame.new(hrp.Position.X, currentY - dropDistance, hrp.Position.Z)
+  print("⏬skyfall")
+end
+
+UIS.InputBegan:Connect(function(input, gpe)
+  if gpe then return end
+  if input.KeyCode == Enum.KeyCode.X then
+    teleportToSky()
+  elseif input.KeyCode == Enum.KeyCode.Z then
+    stepOffSkyPlatform()
+  end
+end)
+
+local function createESP(char, tag)
+  if not char:FindFirstChild(tag) then
+    local highlight = Instance.new("Highlight")
+    highlight.Name = tag
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = char
+    highlight.Parent = char
+  end
+end
+
+local function removeESP(char, tag)
+  local esp = char:FindFirstChild(tag)
+  if esp then esp:Destroy() end
+end
+
+local function createMarker(root)
+  if not root:FindFirstChild("AntiInvisMarker") then
+    local marker = Instance.new("BillboardGui")
+    marker.Name = "AntiInvisMarker"
+    marker.Adornee = root
+    marker.Size = UDim2.new(0, 100, 0, 40)
+    marker.AlwaysOnTop = true
+    marker.StudsOffset = Vector3.new(0, 3, 0)
+    marker.Parent = root
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "👻 Hidden Player"
+    label.TextColor3 = Color3.new(1, 0, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = marker
+  end
+end
+
+local function removeMarker(root)
+  local m = root:FindFirstChild("AntiInvisMarker")
+  if m then m:Destroy() end
+end
+
+local function isInvisible(char)
+  for _, part in pairs(char:GetDescendants()) do
+    if part:IsA("BasePart") and part.Transparency < 0.98 and part.Name ~= "HumanoidRootPart" then
+      return false
+    end
+  end
+  return true
+end
+
+local function updateESP()
+  for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+      local char = player.Character
+      if char and char:IsDescendantOf(workspace) then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local invis = isInvisible(char)
+
+        if espAllEnabled then
+          createESP(char, "ESP_All")
+        else
+          removeESP(char, "ESP_All")
+        end
+
+        if espInvisEnabled and invis then
+          createESP(char, "ESP_Invis")
+          if root then createMarker(root) end
+        else
+          removeESP(char, "ESP_Invis")
+          if root then removeMarker(root) end
+        end
+      end
+    end
+  end
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+  if gpe then return end
+  if input.KeyCode == Enum.KeyCode.Q then
+    espInvisEnabled = not espInvisEnabled
+    print("👻 ESP Invisibles: " .. (espInvisEnabled and "ON" or "OFF"))
+  elseif input.KeyCode == Enum.KeyCode.E then
+    espAllEnabled = not espAllEnabled
+    print("🧍 ESP All Players: " .. (espAllEnabled and "ON" or "OFF"))
+  end
+end)
+
+RunService.Stepped:Connect(function()
+  if espInvisEnabled or espAllEnabled then
+    updateESP()
+  end
+end)
 
 
 local utilToggleFrame = Instance.new("Frame", pages["AutoBuy"])
@@ -1304,13 +1320,13 @@ local function createUtilButton(text, color, callback, id)
 	dropButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
 	Instance.new("UICorner", dropButton).CornerRadius = UDim.new(0, 6)
 
-
+	-- создаём отдельный слой для переключателя
 	local toggleContainer = Instance.new("Frame")
 	toggleContainer.Size = UDim2.new(1, -10, 0, 24)
 	toggleContainer.BackgroundTransparency = 1
 	toggleContainer.ZIndex = 10
 	toggleContainer.Visible = false
-	toggleContainer.Parent = scroll 
+	toggleContainer.Parent = scroll -- 👈 в scroll, не в btn
 
 	local toggle = Instance.new("TextButton", toggleContainer)
 	toggle.Size = UDim2.new(1, 0, 1, 0)
@@ -1357,33 +1373,15 @@ createUtilButton("🥩 Rejoin Server", Color3.fromRGB(120, 80, 200), function()
 	end)
 end, "rejoin")
 
+createUtilButton("😈STEAL - ARBIXHUB", Color3.fromRGB(120, 80, 200), function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/THXZ1N.lua"))()
+end, "instasteal")
+
 createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
 	espAllEnabled = not espAllEnabled
 	espInvisEnabled = not espInvisEnabled
 	print("ESP All: " .. tostring(espAllEnabled))
 end, "ESP")
-
-createUtilButton("😈STEAL - ARBIXHUB", Color3.fromRGB(120, 80, 200), function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/THXZ1N.lua"))()
-end, "instasteal")
-
-
-for id, state in pairs(autoExecStates) do
-	if state then
-		if id == "insta_v1" then
-			pcall(function()
-				local code = game:HttpGet("https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/uti")
-				loadstring(code)()
-			end)
-		elseif id == "insta_v2" then
-			pcall(function()
-				local code = game:HttpGet("https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/v2")
-				loadstring(code)()
-			end)
-		end
-	end
-end
-
 
 if loadHopStatus() then
 	spawn(function()
@@ -1398,3 +1396,4 @@ if loadHopStatus() then
 		end
 	end)
 end
+
