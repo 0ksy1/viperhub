@@ -36,6 +36,11 @@ local foundAnything = ""
 local actualHour = os.date("!*t").hour
 local isRunning = false
 
+local espConnections = {}
+local plotEspEnabled = false
+local updating = false
+local hue = 0
+
 local petsToFind = {
 	    ["Tralalero Tralala"] = true,
 	    ["La Vacca Saturno Saturnita"] = true,
@@ -49,13 +54,16 @@ local petsToFind = {
     	    ["Pot Hotspot"] = true,
     	    ["Las Tralaleritas"] = true,
     	    ["Lucky Block"] = true,
-	    ["Nuclearo Dinossauro"] = true
+	    ["Nuclearo Dinossauro"] = true,
+	    ["Las Vaquitas Saturnitas"] = true,
+	    ["Chicleteira Bicicletera"] = true
+
 }
 
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1396455833038225514/tMz03pEVKf99ZELfCuzPVZ3NBFjMe5_3O-zh7pKDWrcP8v_nF0SD0GPuZ0L7LyIAIxLA" 
+local webhookUrl = "https://discord.com/api/webhooks/1398035160166957126/qFCDrGkcYejwlSb8y2cLbYAgT201eacojy16g91HTmNlN-maOTucaAkCZBWJXXDpsNiS" 
 
 local playedSoundOnce = false
 local petBeams = {}
@@ -195,6 +203,39 @@ end
 
 
 
+local myPlot = nil
+local myPlotMin, myPlotMax = nil, nil
+
+local function findMyPlot()
+	local plots = Workspace:WaitForChild("Plots")
+	for _, plot in pairs(plots:GetChildren()) do
+		local sign = plot:FindFirstChild("PlotSign")
+		if sign then
+			local gui = sign:FindFirstChildOfClass("SurfaceGui")
+			if gui then
+				local frame = gui:FindFirstChild("Frame")
+				if frame then
+					local label = frame:FindFirstChildOfClass("TextLabel")
+					if label and label.Text then
+						local baseName = string.match(label.Text, "^(.-)'s Base$")
+						if baseName and string.lower(baseName) == string.lower(Players.LocalPlayer.Name) then
+							myPlot = plot
+							-- вычисляем AABB (границы)
+							local cf, size = plot:GetBoundingBox()
+							local halfSize = size / 2
+							myPlotMin = (cf.Position - halfSize)
+							myPlotMax = (cf.Position + halfSize)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+
+findMyPlot()
 
 
 
@@ -211,7 +252,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.37 I have yes money EDITION"
+	local versionOS = "v2.41 I have yes money please EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -385,7 +426,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.37 Yes Money Edition"
+title.Text = "viperhub v2.41 I have money please Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -767,6 +808,16 @@ local function scanForPets()
 
 	for _, obj in pairs(Workspace:GetDescendants()) do
 		if petsToFind[obj.Name] and obj:IsA("Model") then
+      local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
+			if root and myPlotMin and myPlotMax then
+				local pos = root.Position
+				if pos.X >= myPlotMin.X and pos.X <= myPlotMax.X
+				and pos.Y >= myPlotMin.Y and pos.Y <= myPlotMax.Y
+				and pos.Z >= myPlotMin.Z and pos.Z <= myPlotMax.Z then
+					continue -- 🧱 на нашей базе — пропускаем
+				end
+			end
+
 			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
@@ -931,12 +982,12 @@ local function teleportToNextServer()
 	end
 
 	statusLabel.Text = "🔁 Searching servers..."
-	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=25"
+	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
 	local cursor = ""
 	local attemptedServers = {}
 	local failAttempts = 0
 	local serverCount = 0
-	local totalServersInBatch = 25
+	local totalServersInBatch = 100
 
   local cachedServers = {}
   local currentIndex = 1
@@ -1233,6 +1284,106 @@ RunService.Stepped:Connect(function()
   end
 end)
 
+local function clearESP()
+	for _, data in pairs(espConnections) do
+		if data.gui then
+			data.gui:Destroy()
+		end
+	end
+	espConnections = {}
+	updating = false
+end
+
+-- Создание одного ESP над Plot
+local function createESP(plotModel, adorneePart, remainingTextObj)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ESP_RemainingTime"
+	billboard.Adornee = adorneePart
+	billboard.Size = UDim2.new(0, 200, 0, 50)
+	billboard.StudsOffset = Vector3.new(0, 5, 0)
+	billboard.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = ""
+	label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+	label.TextStrokeTransparency = 0
+	label.TextScaled = true
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = billboard
+
+	billboard.Parent = adorneePart
+
+
+	espConnections[plotModel] = {
+		gui = billboard,
+		label = label,
+		sourceText = remainingTextObj
+	}
+end
+
+
+function scanAndCreateESP()
+	clearESP()
+
+	local plots = Workspace:FindFirstChild("Plots")
+	if not plots then return end
+
+	for _, plot in ipairs(plots:GetChildren()) do
+		local purchases = plot:FindFirstChild("Purchases")
+		if purchases then
+			local block = purchases:FindFirstChild("PlotBlock")
+			if block and block:FindFirstChild("Main") then
+				local main = block.Main
+				local gui = main:FindFirstChild("BillboardGui")
+				if gui and gui:FindFirstChild("RemainingTime") then
+					local remainingText = gui.RemainingTime
+					if remainingText.Text and remainingText.Text ~= "" then
+						createESP(plot, main, remainingText)
+					end
+				end
+			end
+		end
+	end
+end
+
+function startUpdatingESP()
+	if updating then return end
+	updating = true
+
+
+	RunService.RenderStepped:Connect(function()
+		if not updating then return end
+		hue = (hue + 0.002) % 1
+		for _, data in pairs(espConnections) do
+			if data.label then
+				data.label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+			end
+		end
+	end)
+
+
+	task.spawn(function()
+		while updating do
+			for _, data in pairs(espConnections) do
+				if data.label and data.sourceText then
+					local txt = data.sourceText.Text
+					if txt == "60s" or txt == "" then
+						data.label.Text = "Open"
+					else
+						data.label.Text = txt
+					end
+				end
+			end
+			task.wait(1)
+		end
+	end)
+end
+
+
+
+
 
 local utilToggleFrame = Instance.new("Frame", pages["AutoBuy"])
 utilToggleFrame.Size = UDim2.new(1, -20, 1, -20)
@@ -1359,6 +1510,10 @@ local function createUtilButton(text, color, callback, id)
 
 	btn.MouseButton1Click:Connect(callback)
 	btn.Parent = scroll
+	if autoExecStates[id] then
+		callback()
+	end
+
 end
 
 
@@ -1383,6 +1538,20 @@ createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
 	print("ESP All: " .. tostring(espAllEnabled))
 end, "ESP")
 
+createUtilButton("🧭 Timer ESP", Color3.fromRGB(120, 80, 200), function()
+	plotEspEnabled = not plotEspEnabled
+
+	if plotEspEnabled then
+		scanAndCreateESP()
+		startUpdatingESP()
+	else
+		clearESP()
+	end
+end, "Timer")
+
+
+
+
 if loadHopStatus() then
 	spawn(function()
 		wait(2) 
@@ -1396,4 +1565,3 @@ if loadHopStatus() then
 		end
 	end)
 end
-
