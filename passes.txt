@@ -1,1 +1,2 @@
 ArgusGavno=30
+mrkokashka=50
