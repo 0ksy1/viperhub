@@ -53,7 +53,6 @@ local petsToFind = {
     	    ["Torrtuginni Dragonfrutini"] = true,
     	    ["Pot Hotspot"] = true,
     	    ["Las Tralaleritas"] = true,
-    	    ["Lucky Block"] = true,
 	    ["Nuclearo Dinossauro"] = true,
 	    ["Las Vaquitas Saturnitas"] = true,
 	    ["Chicleteira Bicicletera"] = true
@@ -252,7 +251,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.41 I have yes money please EDITION"
+	local versionOS = "v2.42 I have yes money please EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -426,7 +425,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.41 I have money please Edition"
+title.Text = "viperhub v2.42 I have money please Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -753,8 +752,8 @@ local function autoBuyEnabledItems()
 						:WaitForChild("RF/CoinsShopService/RequestBuy")
 						:InvokeServer(itemName)
 				end)
-				warn("🛍 Автопокупка: " .. itemName)
-				task.wait(1.5) 
+				warn("🛍 Autobuy" .. itemName)
+				task.wait(1) 
 			end
 		end
 	end)
@@ -814,7 +813,7 @@ local function scanForPets()
 				if pos.X >= myPlotMin.X and pos.X <= myPlotMax.X
 				and pos.Y >= myPlotMin.Y and pos.Y <= myPlotMax.Y
 				and pos.Z >= myPlotMin.Z and pos.Z <= myPlotMax.Z then
-					continue -- 🧱 на нашей базе — пропускаем
+					continue 
 				end
 			end
 
@@ -822,7 +821,6 @@ local function scanForPets()
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
 
-					-- 📌 Получаем mutation и generation
 					local mutationType = nil
 					local generationText = "Unknown"
 
@@ -834,7 +832,6 @@ local function scanForPets()
 						end
 					end
 
-					-- 🏷️ BillboardGui
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -862,7 +859,6 @@ local function scanForPets()
 						pulseRGB(label)
 					end
 
-					-- 🔗 Beam
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -889,7 +885,6 @@ local function scanForPets()
 
 					table.insert(petBeams, beam)
 
-					-- 🧾 Подсчёт
 					local key = (mutationType and "⭐️" .. mutationType .. "⭐️ " or "") .. obj.Name .. " - " .. generationText .. " ✅ "
 					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
@@ -910,7 +905,7 @@ local function scanForPets()
 		for name, count in pairs(foundCount) do
 			local fullText = name .. " (x" .. count .. ")"
 
-			-- Добавить в ScrollFrame
+
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(1, -10, 0, 22)
 			label.BackgroundTransparency = 1
@@ -938,7 +933,6 @@ local function scanForPets()
 
 		autoBuyEnabledItems()
 	else
-		-- Ничего не найдено
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.new(1, -10, 0, 22)
 		label.BackgroundTransparency = 1
@@ -982,12 +976,12 @@ local function teleportToNextServer()
 	end
 
 	statusLabel.Text = "🔁 Searching servers..."
-	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=25"
 	local cursor = ""
 	local attemptedServers = {}
 	local failAttempts = 0
 	local serverCount = 0
-	local totalServersInBatch = 100
+	local totalServersInBatch = 25
 
   local cachedServers = {}
   local currentIndex = 1
@@ -1188,17 +1182,27 @@ UIS.InputBegan:Connect(function(input, gpe)
   end
 end)
 
+
 local function createESP(char, tag)
-  if not char:FindFirstChild(tag) then
-    local highlight = Instance.new("Highlight")
-    highlight.Name = tag
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-    highlight.FillTransparency = 0.5
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.OutlineTransparency = 0
-    highlight.Adornee = char
-    highlight.Parent = char
-  end
+	if char:FindFirstChild(tag) then return end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = tag
+	highlight.FillTransparency = 0.5
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.OutlineTransparency = 0
+	highlight.Adornee = char
+	highlight.Parent = char
+
+	local start = tick()
+	RunService.RenderStepped:Connect(function()
+		if not highlight or not highlight.Parent then return end
+		local t = tick() - start
+		local r = math.sin(t * 2) * 0.5 + 0.5
+		local g = math.sin(t * 2 + 2) * 0.5 + 0.5
+		local b = math.sin(t * 2 + 4) * 0.5 + 0.5
+		highlight.FillColor = Color3.new(r, g, b)
+	end)
 end
 
 local function removeESP(char, tag)
@@ -1294,7 +1298,6 @@ local function clearESP()
 	updating = false
 end
 
--- Создание одного ESP над Plot
 local function createESP(plotModel, adorneePart, remainingTextObj)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "ESP_RemainingTime"
@@ -1471,13 +1474,12 @@ local function createUtilButton(text, color, callback, id)
 	dropButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
 	Instance.new("UICorner", dropButton).CornerRadius = UDim.new(0, 6)
 
-	-- создаём отдельный слой для переключателя
 	local toggleContainer = Instance.new("Frame")
 	toggleContainer.Size = UDim2.new(1, -10, 0, 24)
 	toggleContainer.BackgroundTransparency = 1
 	toggleContainer.ZIndex = 10
 	toggleContainer.Visible = false
-	toggleContainer.Parent = scroll -- 👈 в scroll, не в btn
+	toggleContainer.Parent = scroll 
 
 	local toggle = Instance.new("TextButton", toggleContainer)
 	toggle.Size = UDim2.new(1, 0, 1, 0)
