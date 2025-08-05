@@ -754,7 +754,7 @@ local function autoBuyEnabledItems()
 						:InvokeServer(itemName)
 				end)
 				warn("🛍 Autobuy" .. itemName)
-				task.wait(0.7) 
+				task.wait(1) 
 			end
 		end
 	end)
