@@ -65,7 +65,7 @@ local petsToFind = {
 local HttpService = game:GetService("HttpService")
 
 local sendedHOOK = false
-local webhookUrl = "https://discord.com/api/webhooks/1402013357795442849/U49tLeYDGbAj2T617odDYYvRdQY-nfcBQ6BhiEL27e8R2WE2AKLQBziLwnKX2RfmKkcu" 
+
 
 local playedSoundOnce = false
 local petBeams = {}
@@ -121,6 +121,30 @@ if isfile and isfile(autoBuyConfigFile) then
 		end
 	end
 end
+
+local webhookConfigFile = "webhook_settings.json"
+
+local function loadWebhook()
+	if isfile(webhookConfigFile) then
+		local data = HttpService:JSONDecode(readfile(webhookConfigFile))
+		return data.webhookUrl or ""
+	end
+	return ""
+end
+
+local function saveWebhook(url)
+	writefile(webhookConfigFile, HttpService:JSONEncode({ webhookUrl = url }))
+end
+
+_G.webhookUrl = loadWebhook()
+
+local webhookUrl = _G.webhookUrl or ""
+
+
+
+
+
+
 --logger
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -254,7 +278,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.53 Premium EDITION"
+	local versionOS = "v2.55 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -322,37 +346,8 @@ local isRunning = loadHopStatus()
 
 
 
-local function updateSpeed()
-	humanoid.WalkSpeed = isEnabled and speedValue or defaultSpeed
-end
-
-humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-	updateSpeed()
-end)
 
 
-player.CharacterAdded:Connect(function(char)
-	character = char
-	humanoid = character:WaitForChild("Humanoid")
-	updateSpeed()
-	humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.V then
-		isEnabled = not isEnabled
-		updateSpeed()
-		
-		if isEnabled then
-			warn("[SpeedHack] Включено")
-		else
-			warn("[SpeedHack] Выключено")
-		end
-	end
-end)
-
-updateSpeed()
 
 
 
@@ -428,7 +423,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.53 Premium Edition"
+title.Text = "viperhub v2.55 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -759,7 +754,7 @@ local function autoBuyEnabledItems()
 						:InvokeServer(itemName)
 				end)
 				warn("🛍 Autobuy" .. itemName)
-				task.wait(1) 
+				task.wait(0.7) 
 			end
 		end
 	end)
@@ -967,7 +962,37 @@ end
 
 
 
+local function updateSpeed()
+	humanoid.WalkSpeed = isEnabled and speedValue or defaultSpeed
+end
 
+humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+	updateSpeed()
+end)
+
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = character:WaitForChild("Humanoid")
+	updateSpeed()
+	humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		isEnabled = not isEnabled
+		updateSpeed()
+		
+		if isEnabled then
+			warn("[SpeedHack] Включено")
+		else
+			warn("[SpeedHack] Выключено")
+		end
+	end
+end)
+
+updateSpeed()
 
 
 
@@ -1515,13 +1540,13 @@ local function createUtilButton(text, color, callback, id)
 	dropButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
 	Instance.new("UICorner", dropButton).CornerRadius = UDim.new(0, 6)
 
-	-- создаём отдельный слой для переключателя
+
 	local toggleContainer = Instance.new("Frame")
 	toggleContainer.Size = UDim2.new(1, -10, 0, 24)
 	toggleContainer.BackgroundTransparency = 1
 	toggleContainer.ZIndex = 10
 	toggleContainer.Visible = false
-	toggleContainer.Parent = scroll -- 👈 в scroll, не в btn
+	toggleContainer.Parent = scroll 
 
 	local toggle = Instance.new("TextButton", toggleContainer)
 	toggle.Size = UDim2.new(1, 0, 1, 0)
@@ -1572,9 +1597,18 @@ createUtilButton("🥩 Rejoin Server", Color3.fromRGB(120, 80, 200), function()
 	end)
 end, "rejoin")
 
-createUtilButton("😈STEAL - ARBIXHUB", Color3.fromRGB(120, 80, 200), function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brainrot-op/refs/heads/main/Arbixhub-obfuscated.lua"))()
-end, "instasteal")
+createUtilButton("⚡ Speedhack", Color3.fromRGB(120, 80, 200), function()
+	isEnabled = not isEnabled
+
+	if humanoid then
+		if isEnabled then
+			humanoid.WalkSpeed = speedValue
+		else
+			humanoid.WalkSpeed = defaultSpeed
+		end
+	end
+end, "speed")
+
 
 createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
 	espAllEnabled = not espAllEnabled
@@ -1645,8 +1679,6 @@ local function manualTeleportCycle()
 end
 
 
-
-
 local manualTopButton = Instance.new("TextButton", pages["Main"])
 manualTopButton.Size = UDim2.new(1, -20, 0, 36)
 manualTopButton.Position = UDim2.new(0, 10, 1, -120)
@@ -1658,6 +1690,54 @@ manualTopButton.BackgroundColor3 = Color3.fromRGB(55, 60, 90)
 Instance.new("UICorner", manualTopButton).CornerRadius = UDim.new(0, 8)
 
 manualTopButton.MouseButton1Click:Connect(manualTeleportCycle)
+
+
+local webhookBox = Instance.new("TextBox", pages["Settings"])
+webhookBox.Size = UDim2.new(1, -20, 0, 35)
+webhookBox.Position = UDim2.new(0, 10, 0, 100)
+webhookBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+webhookBox.TextColor3 = Color3.new(1, 1, 1)
+webhookBox.Font = Enum.Font.Gotham
+webhookBox.TextSize = 14
+webhookBox.PlaceholderText = "Enter your Discord Webhook..."
+webhookBox.Text = _G.webhookUrl
+webhookBox.ClearTextOnFocus = false
+Instance.new("UICorner", webhookBox)
+
+local saveButton = Instance.new("TextButton", pages["Settings"])
+saveButton.Size = UDim2.new(0.85, 0, 0, 32)
+saveButton.Position = UDim2.new(0, 25, 0, 150)
+saveButton.BackgroundColor3 = Color3.fromRGB(120, 80, 200)
+saveButton.TextColor3 = Color3.new(1, 1, 1)
+saveButton.Font = Enum.Font.GothamBold
+saveButton.TextSize = 14
+saveButton.Text = "💾 Save Webhook"
+Instance.new("UICorner", saveButton)
+
+
+saveButton.MouseButton1Click:Connect(function()
+	local input = webhookBox.Text
+	
+	if input ~= "" and input:match("^https://") then
+		_G.webhookUrl = input
+		saveWebhook(input)
+
+		saveButton.Text = "✅ Saved!"
+		saveButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+		
+		task.wait(1.5)
+		saveButton.Text = "💾 Save Webhook"
+		saveButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	else
+		saveButton.Text = "❌ Invalid URL"
+		saveButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+		
+		task.wait(1.5)
+		saveButton.Text = "💾 Save Webhook"
+		saveButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	end
+end)
+
 
 
 
