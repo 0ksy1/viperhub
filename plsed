@@ -18,16 +18,14 @@ local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local skyY = 230        
-local dropDistance = 50 
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local espInvisEnabled = false
 local espAllEnabled = false
 
-local speedValue = 90
-local defaultSpeed = 32 
+local speedValue = 70
+local defaultSpeed
 local isEnabled = false
 
 local PlaceID = game.PlaceId
@@ -58,6 +56,8 @@ local petsToFind = {
 	    ["Los Combinasionas"] = true,
 	    ["Agarrini la Palini"] = true,
 	    ["Dragon Cannelloni"] = true,
+	    ["Los Hotspotsitos"] = true,
+	    ["Karkerkar Kurkur"] = true,
 	    ["Chicleteira Bicicletera"] = true
 
 }
@@ -78,7 +78,6 @@ sound.Parent = game:GetService("SoundService")
 
 
 local HttpService = game:GetService("HttpService")
-local autoBuyConfigFile = "AutoBuyConfig.json"
 
 local serverCacheFile = "CachedServerList.json"
 local serverIndexFile = "CachedServerIndex.json"
@@ -99,28 +98,6 @@ local function saveAutoExecStates()
 	writefile(autoExecConfigFile, HttpService:JSONEncode(autoExecStates))
 end
 
-
-local autoBuyItems = {
-	["Medusa's Head"] = false,
-	["Invisibility Cloak"] = false,
-	["Quantum Cloner"] = false,
-	["Grapple Hook"] = false,
-    ["Trap"] = false,
-    ["All Seeing Sentry"] = false
-}
-
-if isfile and isfile(autoBuyConfigFile) then
-	local success, data = pcall(function()
-		return HttpService:JSONDecode(readfile(autoBuyConfigFile))
-	end)
-	if success and typeof(data) == "table" then
-		for name, value in pairs(data) do
-			if autoBuyItems[name] ~= nil then
-				autoBuyItems[name] = value
-			end
-		end
-	end
-end
 
 local webhookConfigFile = "webhook_settings.json"
 
@@ -278,7 +255,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.57 Premium EDITION"
+	local versionOS = "v2.6 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -423,7 +400,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.57 Premium Edition"
+title.Text = "viperhub v2.6 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -466,7 +443,7 @@ TabButtonsFrame.BorderSizePixel = 0
 Instance.new("UICorner", TabButtonsFrame).CornerRadius = UDim.new(0, 12)
 
 
-local tabs = {"Main","Utilities", "Buy", "Pet Settings","AutoBuy", "Settings"}
+local tabs = {"Main","Utilities", "Buy", "Pet Settings", "Settings"}
 local pages = {}
 
 for i, tabName in ipairs(tabs) do
@@ -737,29 +714,6 @@ local function getOrCreatePlayerAttachment()
 	return att
 end
 
-local alreadyBought = false
-
-local function autoBuyEnabledItems()
-	if alreadyBought then return end
-	alreadyBought = true
-
-	task.spawn(function()
-		for itemName, enabled in pairs(autoBuyItems) do
-			if enabled then
-				pcall(function()
-					game:GetService("ReplicatedStorage")
-						:WaitForChild("Packages")
-						:WaitForChild("Net")
-						:WaitForChild("RF/CoinsShopService/RequestBuy")
-						:InvokeServer(itemName)
-				end)
-				warn("🛍 Autobuy" .. itemName)
-				task.wait(1) 
-			end
-		end
-	end)
-end
-
 
 local function getMutationMap()
 	local mutationMap = {}
@@ -956,7 +910,6 @@ local function scanForPets()
 			sendedHOOK = true
 		end
 
-		autoBuyEnabledItems()
 	else
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.new(1, -10, 0, 22)
@@ -973,20 +926,42 @@ end
 
 
 
+
+
 local function updateSpeed()
-	humanoid.WalkSpeed = isEnabled and speedValue or defaultSpeed
+	if humanoid then
+		if isEnabled then
+			humanoid.WalkSpeed = speedValue
+		else
+			humanoid.WalkSpeed = defaultSpeed
+		end
+	end
 end
-
-humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-	updateSpeed()
-end)
-
 
 player.CharacterAdded:Connect(function(char)
 	character = char
 	humanoid = character:WaitForChild("Humanoid")
+	hrp = character:WaitForChild("HumanoidRootPart")
+
+	defaultSpeed = humanoid.WalkSpeed
 	updateSpeed()
-	humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
+end)
+
+RunService.Heartbeat:Connect(function()
+	if isEnabled and humanoid and hrp then
+		humanoid.WalkSpeed = speedValue
+		
+		local moveDir = humanoid.MoveDirection
+		if moveDir.Magnitude > 0 then
+			local currentVelocity = hrp.AssemblyLinearVelocity
+			-- сохраняем вертикальную скорость (Y), меняем только XZ
+			hrp.AssemblyLinearVelocity = Vector3.new(
+				moveDir.X * speedValue,
+				currentVelocity.Y,
+				moveDir.Z * speedValue
+			)
+		end
+	end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1002,10 +977,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 	end
 end)
-
-updateSpeed()
-
-
 
 
 spawn(function()
@@ -1239,28 +1210,6 @@ end
 
 --esp
 
-local isSky = false
-
-local function teleportToSky()
-  hrp.CFrame = CFrame.new(hrp.Position.X, skyY, hrp.Position.Z)
-  print("skyrise")
-end
-
-local function stepOffSkyPlatform()
-  local currentY = hrp.Position.Y
-  hrp.CFrame = CFrame.new(hrp.Position.X, currentY - dropDistance, hrp.Position.Z)
-  print("⏬skyfall")
-end
-
-UIS.InputBegan:Connect(function(input, gpe)
-  if gpe then return end
-  if input.KeyCode == Enum.KeyCode.X then
-    teleportToSky()
-  elseif input.KeyCode == Enum.KeyCode.Z then
-    stepOffSkyPlatform()
-  end
-end)
-
 
 local function createESP(char, tag)
 	if char:FindFirstChild(tag) then return end
@@ -1466,46 +1415,6 @@ function startUpdatingESP()
 end
 
 
-
-
-
-local utilToggleFrame = Instance.new("Frame", pages["AutoBuy"])
-utilToggleFrame.Size = UDim2.new(1, -20, 1, -20)
-utilToggleFrame.Position = UDim2.new(0, 10, 0, 10)
-utilToggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-utilToggleFrame.BorderSizePixel = 0
-Instance.new("UICorner", utilToggleFrame).CornerRadius = UDim.new(0, 10)
-
-local UIListLayout = Instance.new("UIListLayout", utilToggleFrame)
-UIListLayout.Padding = UDim.new(0, 6)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-for itemName, enabled in pairs(autoBuyItems) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -10, 0, 36)
-	btn.Text = (enabled and "✅ " or "❌ ") .. itemName
-	btn.TextColor3 = enabled and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 15
-	btn.BackgroundColor3 = Color3.fromRGB(120, 80, 200)
-	btn.BorderSizePixel = 0
-	btn.Parent = utilToggleFrame
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-	btn.MouseButton1Click:Connect(function()
-		autoBuyItems[itemName] = not autoBuyItems[itemName]
-		btn.Text = (autoBuyItems[itemName] and "✅ " or "❌ ") .. itemName
-		btn.TextColor3 = autoBuyItems[itemName] and Color3.fromRGB(150, 255, 150) or Color3.fromRGB(255, 100, 100)
-
-
-		if writefile then
-			pcall(function()
-				writefile(autoBuyConfigFile, HttpService:JSONEncode(autoBuyItems))
-			end)
-		end
-	end)
-end
-
 local HttpService = game:GetService("HttpService")
 local utilitiesTab = pages and pages["Utilities"]
 
@@ -1642,16 +1551,6 @@ createUtilButton("🧭 Timer ESP", Color3.fromRGB(120, 80, 200), function()
 	end
 end, "Timer")
 
-createUtilButton("⛅ Sky Teleport", Color3.fromRGB(120, 80, 200), function()
-    if not hrp then return end
-    if not isSky then
-        teleportToSky()
-        isSky = true
-    else
-        stepOffSkyPlatform()
-        isSky = false
-    end
-end, "skyToggle")
 
 local function manualTeleportCycle()
 	statusLabel.Text = "🔄 Manual ServerHop Started"
@@ -1741,6 +1640,10 @@ saveButton.Text = "💾 Save Webhook"
 Instance.new("UICorner", saveButton)
 
 
+
+
+
+
 saveButton.MouseButton1Click:Connect(function()
 	local input = webhookBox.Text
 	
@@ -1764,6 +1667,41 @@ saveButton.MouseButton1Click:Connect(function()
 	end
 end)
 
+
+local serverIdBox = Instance.new("TextBox", pages["Settings"])
+serverIdBox.Size = UDim2.new(1, -20, 0, 35)
+serverIdBox.Position = UDim2.new(0, 10, 0, 200)
+serverIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+serverIdBox.TextColor3 = Color3.new(1, 1, 1)
+serverIdBox.Font = Enum.Font.Gotham
+serverIdBox.TextSize = 14
+serverIdBox.Text = "" 
+serverIdBox.PlaceholderText = "Enter Server ID..."
+serverIdBox.ClearTextOnFocus = false
+Instance.new("UICorner", serverIdBox)
+
+
+-- Кнопка Join
+local joinButton = Instance.new("TextButton", pages["Settings"])
+joinButton.Size = UDim2.new(0.85, 0, 0, 32)
+joinButton.Position = UDim2.new(0, 25, 0, 250)
+joinButton.BackgroundColor3 = Color3.fromRGB(120, 80, 200)
+joinButton.TextColor3 = Color3.new(1, 1, 1)
+joinButton.Font = Enum.Font.GothamBold
+joinButton.TextSize = 14
+joinButton.Text = "🔗 Join Server"
+Instance.new("UICorner", joinButton)
+
+-- Логика подключения к серверу
+joinButton.MouseButton1Click:Connect(function()
+	local serverId = serverIdBox.Text
+	if serverId ~= "" then
+		warn("[Join Server] Connecting to server:", serverId)
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
+	else
+		warn("[Join Server] Please enter a valid Server ID!")
+	end
+end)
 
 
 
