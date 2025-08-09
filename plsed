@@ -295,7 +295,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.65 Premium EDITION"
+	local versionOS = "v2.68 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -440,7 +440,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.65 Premium Edition"
+title.Text = "viperhub v2.68 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -1700,9 +1700,12 @@ end, "Timer")
 local function manualTeleportCycle()
 	statusLabel.Text = "🔄 Manual ServerHop Started"
 
+	local baseURL = "https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=25"
+	local cursor = ""
 	local cachedServers = {}
 	local currentIndex = 1
 
+	-- Читаем кеш
 	if isfile(serverCacheFile) then
 		local success, data = pcall(function()
 			return HttpService:JSONDecode(readfile(serverCacheFile))
@@ -1721,7 +1724,30 @@ local function manualTeleportCycle()
 		end
 	end
 
-	while currentIndex <= #cachedServers do
+	while true do
+		-- Если дошли до конца списка — запрос нового
+		if currentIndex > #cachedServers then
+			local url = baseURL .. (cursor ~= "" and "&cursor=" .. HttpService:UrlEncode(cursor) or "")
+			local success, response = pcall(function()
+				return HttpService:JSONDecode(game:HttpGet(url))
+			end)
+
+			if success and response and response.data then
+				cursor = response.nextPageCursor or ""
+				cachedServers = response.data
+				currentIndex = 1
+
+				pcall(function()
+					writefile(serverCacheFile, HttpService:JSONEncode(cachedServers))
+					writefile(serverIndexFile, tostring(currentIndex))
+				end)
+			else
+				statusLabel.Text = "⚠️ Failed to fetch servers"
+				break
+			end
+		end
+
+		-- Берём текущий сервер
 		local server = cachedServers[currentIndex]
 		currentIndex += 1
 
@@ -1739,14 +1765,21 @@ local function manualTeleportCycle()
 					writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
 					TeleportService:TeleportToPlaceInstance(PlaceID, id, Players.LocalPlayer)
 				end)
+
+				task.wait(0.3)
 			end
 		end
 
-		wait(0.3)
+
+		if cursor == "" and currentIndex > #cachedServers then
+			statusLabel.Text = "♻️ No more servers"
+			break
+		end
 	end
 
 	statusLabel.Text = "✅ Manual ServerHop Done"
 end
+
 
 
 local manualTopButton = Instance.new("TextButton", pages["Main"])
@@ -1837,25 +1870,96 @@ joinButton.TextSize = 14
 joinButton.Text = "🔗 Join Server"
 Instance.new("UICorner", joinButton)
 
-local infoLabel = Instance.new("TextLabel", pages["Info"])
-infoLabel.Size = UDim2.new(1, -10, 1, -10) -- отступы
+
+local textService = game:GetService("TextService")
+
+
+local infoScroll = Instance.new("ScrollingFrame", pages["Info"])
+infoScroll.Size = UDim2.new(1, -10, 1, -10) 
+infoScroll.Position = UDim2.new(0, 5, 0, 5)
+infoScroll.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+infoScroll.BackgroundTransparency = 0.2
+infoScroll.BorderSizePixel = 0
+infoScroll.ScrollBarThickness = 6
+infoScroll.AutomaticCanvasSize = Enum.AutomaticSize.None
+infoScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+
+
+local corner = Instance.new("UICorner", infoScroll)
+corner.CornerRadius = UDim.new(0, 8)
+
+
+local infoLabel = Instance.new("TextLabel", infoScroll)
+infoLabel.Size = UDim2.new(1, -10, 0, 0) 
 infoLabel.Position = UDim2.new(0, 5, 0, 5)
 infoLabel.BackgroundTransparency = 1
 infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 infoLabel.TextWrapped = true
 infoLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoLabel.TextYAlignment = Enum.TextYAlignment.Top
-infoLabel.Font = Enum.Font.SourceSans
+infoLabel.Font = Enum.Font.GothamSemibold
 infoLabel.TextSize = 18
 infoLabel.Text = [[
+
 📜 Changelog:
 
 - Обновлен Speedhack (⚡ кнопка и на V)
-
 - Добавлен Infinite Jump (🪂 кнопка и C - включить и зажать пробел)
+- Улучшен ManualTP💎
 
-- Чтобы работал спидхак , нужен плащ неведимка
+📜 Info:
+
+--MAIN
+-Тут Serverhop и петы на сервере
+ManualTP - сменить 1 сервер , при наличие нужного пета на сервере
+AutoHop - бесконечная смена серверов, пока не найдем пета
+StartHop - сменить 1 сервер
+Stop - остановка Serverhop
+
+--Utilities
+-Функции помогающие своровать пета😋
+
+--Buy
+-Покупка вещей 
+
+--Pet Settings
+-Тут выбираем нужных петов для серверхопа
+
+--Settings
+-Настройка вебхука и подключиться с помощью serverID
 ]]
+
+-- Ограничитель размера текста
+local textConstraint = Instance.new("UITextSizeConstraint", infoLabel)
+textConstraint.MaxTextSize = 18
+
+-- Отступы внутри текста
+local padding = Instance.new("UIPadding", infoLabel)
+padding.PaddingLeft = UDim.new(0, 5)
+padding.PaddingRight = UDim.new(0, 5)
+padding.PaddingTop = UDim.new(0, 5)
+padding.PaddingBottom = UDim.new(0, 5)
+
+
+local function updateCanvas()
+    local textBounds = textService:GetTextSize(
+        infoLabel.Text,
+        infoLabel.TextSize,
+        infoLabel.Font,
+        Vector2.new(infoLabel.AbsoluteSize.X, math.huge)
+    )
+
+    local labelHeight = textBounds.Y + 10
+    infoLabel.Size = UDim2.new(1, -10, 0, labelHeight)
+    infoScroll.CanvasSize = UDim2.new(0, 0, 0, labelHeight + 10)
+end
+
+
+infoLabel:GetPropertyChangedSignal("Text"):Connect(updateCanvas)
+infoLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvas)
+
+updateCanvas()
+
 
 
 
