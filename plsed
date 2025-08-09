@@ -223,7 +223,7 @@ local function findMyPlot()
 						local baseName = string.match(label.Text, "^(.-)'s Base$")
 						if baseName and string.lower(baseName) == string.lower(Players.LocalPlayer.Name) then
 							myPlot = plot
-							-- вычисляем AABB (границы)
+
 							local cf, size = plot:GetBoundingBox()
 							local halfSize = size / 2
 							myPlotMin = (cf.Position - halfSize)
@@ -780,14 +780,13 @@ local function scanForPets()
 				if pos.X >= myPlotMin.X and pos.X <= myPlotMax.X
 				and pos.Y >= myPlotMin.Y and pos.Y <= myPlotMax.Y
 				and pos.Z >= myPlotMin.Z and pos.Z <= myPlotMax.Z then
-					continue -- 🧱 На нашей базе — пропускаем
+					continue 
 				end
 			end
 
 			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
 				if (root.Position - hrp.Position).Magnitude < 5000 then
 
-					-- 📌 Получаем mutation и generation
 					local mutationType = nil
 					local generationText = "Unknown"
 
@@ -809,7 +808,6 @@ local function scanForPets()
 						end
 					end
 
-					-- 🏷️ BillboardGui
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -837,7 +835,7 @@ local function scanForPets()
 						pulseRGB(label)
 					end
 
-					-- 🔗 Beam
+
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -864,7 +862,7 @@ local function scanForPets()
 
 					table.insert(petBeams, beam)
 
-					-- 🧾 Подсчёт
+
 					local key = (mutationType and mutationType .. " " or "") .. obj.Name .. " - " .. generationText .. " ✅"
 					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
@@ -925,59 +923,83 @@ end
 
 
 
+local speedValue = 70              
+local defaultSpeed = 16           
+local isEnabled = false
+local humanoid, hrp
+local smoothing = 0.35            
+local minMoveThreshold = 0.05     
 
+local function bindCharacter(char)
+    if not char then return end
+    humanoid = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
+    hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") 
+    if humanoid then
+        defaultSpeed = humanoid.WalkSpeed or defaultSpeed
 
-
-local function updateSpeed()
-	if humanoid then
-		if isEnabled then
-			humanoid.WalkSpeed = speedValue
-		else
-			humanoid.WalkSpeed = defaultSpeed
-		end
-	end
+        if not isEnabled then
+            humanoid.WalkSpeed = defaultSpeed
+        end
+        warn("[SpeedHack] Привязан Humanoid. defaultSpeed = "..tostring(defaultSpeed))
+    else
+        warn("[SpeedHack] Humanoid не найден в Character.")
+    end
 end
 
-player.CharacterAdded:Connect(function(char)
-	character = char
-	humanoid = character:WaitForChild("Humanoid")
-	hrp = character:WaitForChild("HumanoidRootPart")
+if player.Character then
+    bindCharacter(player.Character)
+end
+player.CharacterAdded:Connect(bindCharacter)
 
-	defaultSpeed = humanoid.WalkSpeed
-	updateSpeed()
-end)
+local function setNormalSpeed()
+    if humanoid then
+        humanoid.WalkSpeed = defaultSpeed
+    end
+end
+
+local function setHackSpeed()
+    if humanoid then
+        humanoid.WalkSpeed = speedValue
+    end
+end
 
 RunService.Heartbeat:Connect(function()
-	if isEnabled and humanoid and hrp then
-		humanoid.WalkSpeed = speedValue
-		
-		local moveDir = humanoid.MoveDirection
-		if moveDir.Magnitude > 0 then
-			local currentVelocity = hrp.AssemblyLinearVelocity
-			-- сохраняем вертикальную скорость (Y), меняем только XZ
-			hrp.AssemblyLinearVelocity = Vector3.new(
-				moveDir.X * speedValue,
-				currentVelocity.Y,
-				moveDir.Z * speedValue
-			)
-		end
-	end
+    if not humanoid or not hrp then return end
+
+    if isEnabled then
+        local moveDir = humanoid.MoveDirection
+        if moveDir and moveDir.Magnitude > minMoveThreshold then
+            setHackSpeed()
+
+            local ok, currentVel = pcall(function() return hrp.AssemblyLinearVelocity end)
+            if ok and currentVel then
+                local targetVel = Vector3.new(moveDir.X * speedValue, currentVel.Y, moveDir.Z * speedValue)
+                local smoothVel = currentVel:Lerp(targetVel, smoothing)
+
+                pcall(function()
+                    hrp.AssemblyLinearVelocity = Vector3.new(smoothVel.X, currentVel.Y, smoothVel.Z)
+                end)
+            end
+        else
+
+            setNormalSpeed()
+        end
+    else
+
+        setNormalSpeed()
+    end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.V then
-		isEnabled = not isEnabled
-		updateSpeed()
-		
-		if isEnabled then
-			warn("[SpeedHack] Включено")
-		else
-			warn("[SpeedHack] Выключено")
-		end
-	end
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.V then
+        isEnabled = not isEnabled
+        if not isEnabled then
+            setNormalSpeed()
+        end
+        warn("[SpeedHack] "..(isEnabled and "on" or "off"))
+    end
 end)
-
 
 spawn(function()
 	while true do
@@ -1222,7 +1244,7 @@ local function createESP(char, tag)
 	highlight.Adornee = char
 	highlight.Parent = char
 
-	-- Перелив RGB
+
 	local start = tick()
 	RunService.RenderStepped:Connect(function()
 		if not highlight or not highlight.Parent then return end
@@ -1327,7 +1349,7 @@ local function clearESP()
 	updating = false
 end
 
--- Создание одного ESP над Plot
+
 local function createESP(plotModel, adorneePart, remainingTextObj)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "ESP_RemainingTime"
@@ -1681,7 +1703,7 @@ serverIdBox.ClearTextOnFocus = false
 Instance.new("UICorner", serverIdBox)
 
 
--- Кнопка Join
+
 local joinButton = Instance.new("TextButton", pages["Settings"])
 joinButton.Size = UDim2.new(0.85, 0, 0, 32)
 joinButton.Position = UDim2.new(0, 25, 0, 250)
@@ -1692,7 +1714,7 @@ joinButton.TextSize = 14
 joinButton.Text = "🔗 Join Server"
 Instance.new("UICorner", joinButton)
 
--- Логика подключения к серверу
+
 joinButton.MouseButton1Click:Connect(function()
 	local serverId = serverIdBox.Text
 	if serverId ~= "" then
