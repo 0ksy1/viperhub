@@ -120,6 +120,50 @@ local webhookUrl = _G.webhookUrl or ""
 
 
 
+local function bindCharacter(char)
+    humanoid = char:WaitForChild("Humanoid")
+end
+if player.Character then bindCharacter(player.Character) end
+player.CharacterAdded:Connect(bindCharacter)
+
+
+local jumpForce = 22
+local infJumpEnabled = false
+local spaceHeld = false
+
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.C then
+        infJumpEnabled = not infJumpEnabled
+        warn("[InfiniteJump] " .. (infJumpEnabled and "on" or "off"))
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        spaceHeld = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.Space then
+        spaceHeld = false
+    end
+end)
+
+
+RunService.Heartbeat:Connect(function()
+    if infJumpEnabled and spaceHeld and humanoid and humanoid.Parent then
+        if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping
+        and humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+
+        local hrp = humanoid.Parent:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local vel = hrp.AssemblyLinearVelocity
+            hrp.AssemblyLinearVelocity = Vector3.new(vel.X, jumpForce, vel.Z)
+        end
+    end
+end)
 
 
 --logger
@@ -255,7 +299,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.6 Premium EDITION"
+	local versionOS = "v2.62 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -400,7 +444,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.6 Premium Edition"
+title.Text = "viperhub v2.62 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -443,7 +487,7 @@ TabButtonsFrame.BorderSizePixel = 0
 Instance.new("UICorner", TabButtonsFrame).CornerRadius = UDim.new(0, 12)
 
 
-local tabs = {"Main","Utilities", "Buy", "Pet Settings", "Settings"}
+local tabs = {"Main","Utilities", "Buy", "Pet Settings", "Settings","Info"}
 local pages = {}
 
 for i, tabName in ipairs(tabs) do
@@ -940,9 +984,8 @@ local function bindCharacter(char)
         if not isEnabled then
             humanoid.WalkSpeed = defaultSpeed
         end
-        warn("[SpeedHack] Привязан Humanoid. defaultSpeed = "..tostring(defaultSpeed))
     else
-        warn("[SpeedHack] Humanoid не найден в Character.")
+
     end
 end
 
@@ -1543,6 +1586,11 @@ createUtilButton("🥩 Rejoin Server", Color3.fromRGB(120, 80, 200), function()
 	end)
 end, "rejoin")
 
+createUtilButton("🪂 Infinite Jump", Color3.fromRGB(120, 80, 200), function()
+    infJumpEnabled = not infJumpEnabled
+end, "infjump")
+
+
 createUtilButton("⚡ Speedhack", Color3.fromRGB(120, 80, 200), function()
 	isEnabled = not isEnabled
 
@@ -1713,6 +1761,27 @@ joinButton.Font = Enum.Font.GothamBold
 joinButton.TextSize = 14
 joinButton.Text = "🔗 Join Server"
 Instance.new("UICorner", joinButton)
+
+local infoLabel = Instance.new("TextLabel", pages["Info"])
+infoLabel.Size = UDim2.new(1, -10, 1, -10) -- отступы
+infoLabel.Position = UDim2.new(0, 5, 0, 5)
+infoLabel.BackgroundTransparency = 1
+infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+infoLabel.TextWrapped = true
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+infoLabel.Font = Enum.Font.SourceSans
+infoLabel.TextSize = 18
+infoLabel.Text = [[
+📜 Changelog:
+
+- Обновлен Speedhack (⚡ кнопка и на V)
+
+- Добавлен Infinite Jump (🪂 кнопка и C - включить и зажать пробел)
+
+- Чтобы работал спидхак , нужен плащ неведимка
+]]
+
 
 
 joinButton.MouseButton1Click:Connect(function()
