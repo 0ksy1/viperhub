@@ -295,7 +295,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.62 Premium EDITION"
+	local versionOS = "v2.65 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -440,7 +440,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.62 Premium Edition"
+title.Text = "viperhub v2.65 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -1581,6 +1581,102 @@ createUtilButton("⚡ Speedhack", Color3.fromRGB(120, 80, 200), function()
 		end
 	end
 end, "speed")
+
+createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local PLACE_ID = game.PlaceId 
+
+    -- GUI
+    local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+    gui.Name = "JobIdJoiner"
+    gui.ResetOnSpawn = false
+
+    -- Frame
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0, 300, 0, 150)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+    -- RGB подсветка рамки
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Thickness = 2
+    stroke.Transparency = 0
+    stroke.Color = Color3.fromRGB(255, 0, 255)
+
+    task.spawn(function()
+        while stroke and stroke.Parent do
+            local hue = tick() % 5 / 5
+            stroke.Color = Color3.fromHSV(hue, 1, 1)
+            task.wait(0.05)
+        end
+    end)
+
+    -- Заголовок
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "🌐 Enter JobId"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.TextColor3 = Color3.new(1, 1, 1)
+
+    -- TextBox
+    local input = Instance.new("TextBox", frame)
+    input.Size = UDim2.new(0.8, 0, 0, 36)
+    input.Position = UDim2.new(0.1, 0, 0, 50)
+    input.PlaceholderText = "Paste JobId here..."
+    input.Text = ""
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 18
+    input.TextColor3 = Color3.new(1, 1, 1)
+    input.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
+
+    -- Label
+    local result = Instance.new("TextLabel", frame)
+    result.Size = UDim2.new(1, -20, 0, 20)
+    result.Position = UDim2.new(0, 10, 0, 95)
+    result.BackgroundTransparency = 1
+    result.TextColor3 = Color3.fromRGB(255, 80, 80)
+    result.Font = Enum.Font.Gotham
+    result.TextSize = 14
+    result.Text = ""
+
+    -- Join Button
+    local submit = Instance.new("TextButton", frame)
+    submit.Size = UDim2.new(0.5, 0, 0, 34)
+    submit.Position = UDim2.new(0.25, 0, 0, 115)
+    submit.Text = "🚀 Join"
+    submit.Font = Enum.Font.GothamBold
+    submit.TextSize = 16
+    submit.TextColor3 = Color3.new(1, 1, 1)
+    submit.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
+    Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 8)
+
+    submit.MouseButton1Click:Connect(function()
+        local jobId = input.Text
+        if jobId and jobId:match("%w+") then
+            result.Text = "🔄 Joining..."
+            result.TextColor3 = Color3.fromRGB(80, 255, 80)
+            task.wait(0.5)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, LocalPlayer)
+            end)
+        else
+            result.Text = "❌ Invalid JobId!"
+            result.TextColor3 = Color3.fromRGB(255, 80, 80)
+        end
+    end)
+end, "jobidjoin")
+
+
 
 
 createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
