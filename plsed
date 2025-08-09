@@ -24,10 +24,6 @@ local LocalPlayer = Players.LocalPlayer
 local espInvisEnabled = false
 local espAllEnabled = false
 
-local speedValue = 70
-local defaultSpeed
-local isEnabled = false
-
 local PlaceID = game.PlaceId
 local AllIDs = {}
 local foundAnything = ""
@@ -967,83 +963,66 @@ end
 
 
 
-local speedValue = 70              
-local defaultSpeed = 16           
+local speedBase = 75       
+local variation = 2        
 local isEnabled = false
-local humanoid, hrp
-local smoothing = 0.35            
-local minMoveThreshold = 0.05     
+local smoothing = 0.5
+local minMoveThreshold = 0.01
+local defaultSpeed = humanoid.WalkSpeed 
 
 local function bindCharacter(char)
-    if not char then return end
-    humanoid = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
-    hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") 
-    if humanoid then
-        defaultSpeed = humanoid.WalkSpeed or defaultSpeed
-
-        if not isEnabled then
-            humanoid.WalkSpeed = defaultSpeed
-        end
-    else
-
-    end
+	if not char then return end
+	humanoid = char:FindFirstChildOfClass("Humanoid")
+	hrp = char:FindFirstChild("HumanoidRootPart")
+	if humanoid then
+		defaultSpeed = humanoid.WalkSpeed or defaultSpeed
+		if not isEnabled then
+			humanoid.WalkSpeed = defaultSpeed
+		end
+	end
 end
 
 if player.Character then
-    bindCharacter(player.Character)
+	bindCharacter(player.Character)
 end
 player.CharacterAdded:Connect(bindCharacter)
 
 local function setNormalSpeed()
-    if humanoid then
-        humanoid.WalkSpeed = defaultSpeed
-    end
-end
-
-local function setHackSpeed()
-    if humanoid then
-        humanoid.WalkSpeed = speedValue
-    end
+	if humanoid then
+		humanoid.WalkSpeed = defaultSpeed
+	end
 end
 
 RunService.Heartbeat:Connect(function()
-    if not humanoid or not hrp then return end
+	if not humanoid or not hrp then return end
 
-    if isEnabled then
-        local moveDir = humanoid.MoveDirection
-        if moveDir and moveDir.Magnitude > minMoveThreshold then
-            setHackSpeed()
-
-            local ok, currentVel = pcall(function() return hrp.AssemblyLinearVelocity end)
-            if ok and currentVel then
-                local targetVel = Vector3.new(moveDir.X * speedValue, currentVel.Y, moveDir.Z * speedValue)
-                local smoothVel = currentVel:Lerp(targetVel, smoothing)
-
-                pcall(function()
-                    hrp.AssemblyLinearVelocity = Vector3.new(smoothVel.X, currentVel.Y, smoothVel.Z)
-                end)
-            end
-        else
-
-            setNormalSpeed()
-        end
-    else
-
-        setNormalSpeed()
-    end
+	if isEnabled then
+		local moveDir = humanoid.MoveDirection
+		if moveDir and moveDir.Magnitude > minMoveThreshold then
+			local currentVel = hrp.AssemblyLinearVelocity
+			-- динамическая скорость
+			local randSpeed = speedBase + math.random(-variation, variation)
+			local targetVel = Vector3.new(moveDir.X * randSpeed, currentVel.Y, moveDir.Z * randSpeed)
+			local smoothVel = currentVel:Lerp(targetVel, smoothing)
+			hrp.AssemblyLinearVelocity = Vector3.new(smoothVel.X, currentVel.Y, smoothVel.Z)
+		else
+			setNormalSpeed()
+		end
+	else
+		setNormalSpeed()
+	end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.V then
-        isEnabled = not isEnabled
-        if not isEnabled then
-            setNormalSpeed()
-        end
-        warn("[SpeedHack] "..(isEnabled and "on" or "off"))
-    end
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		isEnabled = not isEnabled
+		if not isEnabled then
+			setNormalSpeed()
+		end
+		warn("[SpeedHack] " .. (isEnabled and "on" or "off"))
+	end
 end)
-
 spawn(function()
 	while true do
 		scanForPets()
