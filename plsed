@@ -303,7 +303,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.69 Premium EDITION"
+	local versionOS = "v2.7 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -448,7 +448,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.69 Premium Edition"
+title.Text = "viperhub v2.7 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -976,7 +976,7 @@ local variation = 2
 local isEnabled = false
 local smoothing = 0.5
 local minMoveThreshold = 0.01
-local defaultSpeed = humanoid.WalkSpeed 
+local defaultSpeed = 16     
 
 local function bindCharacter(char)
 	if not char then return end
@@ -984,9 +984,6 @@ local function bindCharacter(char)
 	hrp = char:FindFirstChild("HumanoidRootPart")
 	if humanoid then
 		defaultSpeed = humanoid.WalkSpeed or defaultSpeed
-		if not isEnabled then
-			humanoid.WalkSpeed = defaultSpeed
-		end
 	end
 end
 
@@ -995,42 +992,31 @@ if player.Character then
 end
 player.CharacterAdded:Connect(bindCharacter)
 
-local function setNormalSpeed()
-	if humanoid then
-		humanoid.WalkSpeed = defaultSpeed
-	end
-end
 
-RunService.Heartbeat:Connect(function()
-	if not humanoid or not hrp then return end
-
-	if isEnabled then
-		local moveDir = humanoid.MoveDirection
-		if moveDir and moveDir.Magnitude > minMoveThreshold then
-			local currentVel = hrp.AssemblyLinearVelocity
-			-- динамическая скорость
-			local randSpeed = speedBase + math.random(-variation, variation)
-			local targetVel = Vector3.new(moveDir.X * randSpeed, currentVel.Y, moveDir.Z * randSpeed)
-			local smoothVel = currentVel:Lerp(targetVel, smoothing)
-			hrp.AssemblyLinearVelocity = Vector3.new(smoothVel.X, currentVel.Y, smoothVel.Z)
-		else
-			setNormalSpeed()
-		end
-	else
-		setNormalSpeed()
-	end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
 	if input.KeyCode == Enum.KeyCode.V then
 		isEnabled = not isEnabled
-		if not isEnabled then
-			setNormalSpeed()
-		end
-		warn("[SpeedHack] " .. (isEnabled and "on" or "off"))
+		print("Speedhack:", isEnabled and "ON" or "OFF")
 	end
 end)
+
+
+RunService.Heartbeat:Connect(function()
+	if not isEnabled then return end 
+	if not humanoid or not hrp then return end
+
+	local moveDir = humanoid.MoveDirection
+	if moveDir and moveDir.Magnitude > minMoveThreshold then
+		local currentVel = hrp.AssemblyLinearVelocity
+		local randSpeed = speedBase + math.random(-variation, variation)
+		local targetVel = Vector3.new(moveDir.X * randSpeed, currentVel.Y, moveDir.Z * randSpeed)
+		local smoothVel = currentVel:Lerp(targetVel, smoothing)
+		hrp.AssemblyLinearVelocity = Vector3.new(smoothVel.X, currentVel.Y, smoothVel.Z)
+	end
+end)
+
+
 spawn(function()
 	while true do
 		scanForPets()
@@ -1733,14 +1719,14 @@ local function manualTeleportCycle()
 	end
 
 	while true do
-		-- Если дошли до конца списка — запрос нового
 		if currentIndex > #cachedServers then
+			statusLabel.Text = "📡 Getting server list"
 			local url = baseURL .. (cursor ~= "" and "&cursor=" .. HttpService:UrlEncode(cursor) or "")
 			local success, response = pcall(function()
 				return HttpService:JSONDecode(game:HttpGet(url))
 			end)
 
-			if success and response and response.data then
+			if success and response and response.data and #response.data > 0 then
 				cursor = response.nextPageCursor or ""
 				cachedServers = response.data
 				currentIndex = 1
@@ -1750,7 +1736,8 @@ local function manualTeleportCycle()
 					writefile(serverIndexFile, tostring(currentIndex))
 				end)
 			else
-				statusLabel.Text = "⚠️ Failed to fetch servers"
+				statusLabel.Text = "⚠️failed to fetch"
+				task.wait(3)
 				break
 			end
 		end
@@ -1779,13 +1766,13 @@ local function manualTeleportCycle()
 		end
 
 
-		if cursor == "" and currentIndex > #cachedServers then
-			statusLabel.Text = "♻️ No more servers"
-			break
+		if currentIndex > #cachedServers and cursor == "" then
+			statusLabel.Text = "♻️ No servers, retrying.."
+			cursor = "" -- сброс курсора
 		end
 	end
 
-	statusLabel.Text = "✅ Manual ServerHop Done"
+	statusLabel.Text = "Manual ServerHop crashed lol"
 end
 
 
