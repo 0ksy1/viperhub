@@ -1,0 +1,327 @@
+-- Основные сервисы
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+-- Настройки юнитов
+local UNIT_NAME = "unit_tomato_plant"
+local UNIT_COST = 150
+local UNIT_COUNT = 20
+local UPGRADE_COSTS = {150, 200, 400, 600}
+
+local player = Players.LocalPlayer
+local entities = workspace:WaitForChild("Map"):WaitForChild("Entities")
+
+local PLACE_UNIT = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("PlaceUnit")
+local UPGRADE_UNIT = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("UpgradeUnit")
+local RESTART_GAME = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("RestartGame")
+local VOTE_DIFFICULTY = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("PlaceDifficultyVote")
+local SKIP_WAVE = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("SkipWave")
+local CHANGE_SPEED = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("ChangeTickSpeed")
+
+-- === Создание GUI ===
+local gui = Instance.new("ScreenGui")
+gui.Name = "FarmUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 400, 0, 300)
+frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.fromRGB(230, 230, 230)
+title.Text = "viperhub v0.12 25wins"
+title.Parent = frame
+
+-- Кнопка START/STOP
+local startBtn = Instance.new("TextButton")
+startBtn.Size = UDim2.new(0, 120, 0, 35)
+startBtn.Position = UDim2.new(0, 10, 0, 50)
+startBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+startBtn.Font = Enum.Font.GothamBold
+startBtn.TextSize = 16
+startBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+startBtn.Text = "START"
+Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 6)
+startBtn.Parent = frame
+
+-- Лог
+local logFrame = Instance.new("Frame")
+logFrame.Size = UDim2.new(1, -20, 1, -100)
+logFrame.Position = UDim2.new(0, 10, 0, 100)
+logFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+logFrame.Parent = frame
+Instance.new("UICorner", logFrame).CornerRadius = UDim.new(0, 8)
+
+local logScroll = Instance.new("ScrollingFrame")
+logScroll.Size = UDim2.new(1, -10, 1, -10)
+logScroll.Position = UDim2.new(0, 5, 0, 5)
+logScroll.BackgroundTransparency = 1
+logScroll.ScrollBarThickness = 4
+logScroll.Parent = logFrame
+
+local logLayout = Instance.new("UIListLayout")
+logLayout.Padding = UDim.new(0, 4)
+logLayout.SortOrder = Enum.SortOrder.LayoutOrder
+logLayout.Parent = logScroll
+
+local function addLog(text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.Text = os.date("[%H:%M:%S] ") .. text
+    label.Parent = logScroll
+    logScroll.CanvasSize = UDim2.new(0, 0, 0, logLayout.AbsoluteContentSize.Y)
+end
+
+-- Функции для динамического доступа к GUI игры
+local function getGuiCash()
+    local gameGui = player:FindFirstChild("PlayerGui"):FindFirstChild("GameGui")
+    if gameGui and gameGui.Screen and gameGui.Screen.Bottom then
+        return gameGui.Screen.Bottom:FindFirstChild("Cash")
+    end
+    return nil
+end
+
+local function getScreenMiddle()
+    local gameGui = player:FindFirstChild("PlayerGui"):FindFirstChild("GameGui")
+    if gameGui and gameGui.Screen then
+        return gameGui.Screen.Middle
+    end
+    return nil
+end
+
+
+-- === Делаем окно draggable ===
+local dragging = false
+local dragInput, mousePos, framePos
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if dragging and dragInput then
+        local delta = dragInput.Position - mousePos
+        frame.Position = UDim2.new(
+            framePos.X.Scale, framePos.X.Offset + delta.X,
+            framePos.Y.Scale, framePos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+
+local farming = false
+local farmThread
+
+startBtn.MouseButton1Click:Connect(function()
+    if farming then
+        farming = false
+        startBtn.Text = "START"
+        addLog("⛔ Цикл остановлен вручную.")
+        return
+    end
+
+    farming = true
+    startBtn.Text = "STOP"
+    addLog("🚀 Цикл фарма запущен.")
+
+    farmThread = task.spawn(function()
+        local placedUnits = 0
+        local unitProgress = {}
+        local speedEnabled = false
+        local MAX_UNITS = 20
+        local placedSpecialUnit = false
+
+        local startPos = Vector3.new(-328.6381, 61.6803, -131.7776)
+        local endPos   = Vector3.new(-321.8539, 61.6803, -118.3228)
+        local stepX = 2
+        local stepZ = 2
+
+        local function resetCycle()
+            placedUnits = 0
+            unitProgress = {}
+            placedSpecialUnit = false
+            speedEnabled = false
+            addLog("🔄 Новый цикл фарма.")
+        end
+
+        local function isGameEnded()
+            local screenMiddle = getScreenMiddle()
+            return screenMiddle and screenMiddle:FindFirstChild("GameEnd") and screenMiddle.GameEnd.Visible
+        end
+
+        local function handleGameEnd()
+            game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunctions"):WaitForChild("RestartGame"):InvokeServer()
+            addLog("🔁 Перезапуск игры.")
+            resetCycle()
+            task.wait(2)
+        end
+
+        local function voteEasy()
+            pcall(function() VOTE_DIFFICULTY:InvokeServer("dif_easy") end)
+            addLog("🗳️ Проголосовал за dif_easy")
+        end
+
+        local function enableSpeedAndSkip()
+            pcall(function() SKIP_WAVE:InvokeServer({"y"}) end)
+            pcall(function() CHANGE_SPEED:InvokeServer(2) end)
+            addLog("⏩ Включен авто-скип и скорость x2")
+        end
+
+        local function getCash()
+            local guiCash = getGuiCash()
+            if guiCash and guiCash.Text then
+                local digits = guiCash.Text:gsub("%D", "")
+                if digits ~= "" then
+                    return tonumber(digits)
+                end
+            end
+            return 0
+        end
+
+        local function getMyUnits()
+            local list = {}
+            local entities = workspace:WaitForChild("Map"):WaitForChild("Entities")
+            for _, obj in ipairs(entities:GetChildren()) do
+                if obj.Name == UNIT_NAME then
+                    table.insert(list, obj)
+                end
+            end
+            return list
+        end
+
+        local function getUnitId(unit)
+            return unit:GetAttribute("ID")
+        end
+
+        local function waitForCash(amount)
+            while getCash() < amount and farming do
+                if isGameEnded() then return false end
+                task.wait(0.5)
+            end
+            return farming
+        end
+
+        local function placeOneUnit(pos)
+            if not waitForCash(UNIT_COST) then return false end
+            local args = {
+                UNIT_NAME,
+                {
+                    Valid = true,
+                    Rotation = 90,
+                    CF = CFrame.new(pos) * CFrame.Angles(0, math.rad(90), 0),
+                    Position = pos
+                }
+            }
+            pcall(function() PLACE_UNIT:InvokeServer(unpack(args)) end)
+            placedUnits += 1
+            addLog(("🪖 Поставлен юнит #%d из %d"):format(placedUnits, MAX_UNITS))
+            task.wait(0.2)
+            local units = getMyUnits()
+            return units[#units] or false
+        end
+
+        local function upgradeUnitToMax(unit)
+            if not unit then return false end
+            local uid = getUnitId(unit)
+            if not uid then return false end
+            unitProgress[uid] = unitProgress[uid] or 0
+
+            while unitProgress[uid] < #UPGRADE_COSTS and farming do
+                local cost = UPGRADE_COSTS[unitProgress[uid] + 1]
+                if not waitForCash(cost) then return false end
+                pcall(function() UPGRADE_UNIT:InvokeServer(uid) end)
+                unitProgress[uid] += 1
+                addLog(("⬆️ Юнит %d улучшен до уровня %d (💰 %d)"):format(uid, unitProgress[uid], cost))
+                task.wait(0.3)
+            end
+            return true
+        end
+
+        local function getCurrentWave()
+            local screenMiddle = getScreenMiddle()
+            if screenMiddle and screenMiddle:FindFirstChild("Wave") then
+                local num = tonumber(screenMiddle.Wave.Text:match("%d+"))
+                if num then return num end
+            end
+            return 1
+        end
+
+        -- 🔄 Главный цикл
+        while farming do
+            if isGameEnded() then
+                handleGameEnd()
+                continue
+            end
+
+            local screenMiddle = getScreenMiddle()
+            if screenMiddle and screenMiddle:FindFirstChild("DifficultyVote") and screenMiddle.DifficultyVote.Visible then
+                voteEasy()
+                task.wait(1)
+                continue
+            end
+
+            if not speedEnabled then
+                enableSpeedAndSkip()
+                speedEnabled = true
+            end
+
+            local wave = getCurrentWave()
+            if wave < 19 then
+                for x = startPos.X, endPos.X, stepX do
+                    for z = startPos.Z, endPos.Z, stepZ do
+                        if not farming or placedUnits >= MAX_UNITS then break end
+                        local pos = Vector3.new(x, startPos.Y, z)
+                        local newUnit = placeOneUnit(pos)
+                        if not newUnit or not upgradeUnitToMax(newUnit) then break end
+                        if isGameEnded() then break end
+                        task.wait(0.1)
+                    end
+                    if not farming or isGameEnded() then break end
+                end
+            else
+                local units = getMyUnits()
+                for _, unit in ipairs(units) do
+                    if not upgradeUnitToMax(unit) or isGameEnded() then break end
+                    task.wait(0.1)
+                end
+            end
+
+            task.wait(0.1)
+        end
+    end)
+end)
+
+
+
