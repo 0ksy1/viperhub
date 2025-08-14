@@ -52,7 +52,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextColor3 = Color3.fromRGB(230, 230, 230)
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Text = "ViperHub"
+title.Text = "ViperHub v 0.25 WORKING"
 title.Parent = navbar
 
 local closeBtn = Instance.new("TextButton")
@@ -244,38 +244,34 @@ startBtn.MouseButton1Click:Connect(function()
     addLog("🚀 Цикл фарма запущен.")
 
     farmThread = task.spawn(function()
-        -- === НАСТРОЙКИ ===
         local unitProgress = {}
         local placedUnits = 0
         local currentLevel = nil
+        local placedCentral = false
+        local placedAroundSpecial = false
+        local specialUnitsIDs = {}
 
-        -- Получаем текущий баланс
         local function getCash()
             local txt = guiCash.Text:gsub("%D", "")
             return tonumber(txt) or 0
         end
 
-        -- Получаем список моих юнитов
         local function getMyUnits()
             local list = {}
             for _, obj in ipairs(entities:GetChildren()) do
-                if obj.Name == UNIT_NAME then
+                if obj.Name == UNIT_NAME or obj.Name == "unit_molten_flower" then
                     table.insert(list, obj)
                 end
             end
             return list
         end
 
-        -- Получить ID юнита
         local function getUnitId(unit)
             local id = unit:GetAttribute("ID")
-            if id then
-                return tonumber(id)
-            end
-            return nil
+            return id and tonumber(id) or nil
         end
 
-        -- Поставить юнит по кругу
+        -- Ставим юнита по индексу в круге
         local function placeUnitAtIndex(index)
             local angle = (index / UNIT_COUNT) * math.pi * 2
             local x = math.cos(angle) * RADIUS
@@ -285,8 +281,8 @@ startBtn.MouseButton1Click:Connect(function()
                 {
                     Valid = true,
                     Rotation = 180,
-                    CF = CFrame.new(x, 0, z, -1, 0, 0, 0, 1, 0, 0, 0, -1),
-                    Position = Vector3.new(x, 0, z)
+                    CF = CFrame.new(x, 0, z, -1,0,0,0,1,0,0,0,-1),
+                    Position = Vector3.new(x,0,z)
                 }
             }
             local success, err = pcall(function()
@@ -294,64 +290,184 @@ startBtn.MouseButton1Click:Connect(function()
             end)
             if success then
                 placedUnits += 1
-                addLog(("🪖 Поставлен юнит #%d"):format(placedUnits))
+                addLog(("🪖 Поставлен юнит #%d в круге"):format(placedUnits))
             else
                 addLog("⚠️ Ошибка установки юнита: " .. tostring(err))
             end
         end
 
-        -- Цикл улучшений
-        local function tryUpgradeUnits()
+        -- Ставим центральный спец. юнит
+        local function placeCentralSpecial()
+            if not placedCentral and getCash() >= 1000 then
+                local args = {
+                    "unit_molten_flower",
+                    {
+                        Valid=true,
+                        Rotation=180,
+                        CF=CFrame.new(0,0,0, -1,0,0, 0,1,0, 0,0,-1),
+                        Position=Vector3.new(0,0,0)
+                    }
+                }
+                local success, err = pcall(function()
+                    placeUnit:InvokeServer(unpack(args))
+                end)
+                if success then
+                    placedCentral = true
+                    addLog("🪖 Центральный спец. юнит поставлен")
+                else
+                    addLog("⚠️ Ошибка установки центрального спец. юнита: "..tostring(err))
+                end
+            end
+        end
+
+                -- Ставим 4 спец. юнита вокруг круга
+        local function placeAroundSpecial()
+            if placedAroundSpecial or getCash() < 4000 then return end
+            local positions = {
+                Vector3.new(RADIUS+2,0,0),
+                Vector3.new(0,0,RADIUS+2),
+                Vector3.new(-RADIUS-2,0,0),
+                Vector3.new(0,0,-RADIUS-2)
+            }
+            for i,pos in ipairs(positions) do
+                local args = {
+                    "unit_molten_flower",
+                    {
+                        Valid=true,
+                        Rotation=180,
+                        CF=CFrame.new(pos.X,pos.Y,pos.Z, -1,0,0,0,1,0,0,0,-1),
+                        Position=pos
+                    }
+                }
+                local success, err = pcall(function()
+                    placeUnit:InvokeServer(unpack(args))
+                end)
+                if success then
+                    -- Ждем, чтобы сервер добавил ID
+                    task.wait(0.3)
+                    -- Ищем последний поставленный юнит с этим именем
+                    for _,unit in ipairs(entities:GetChildren()) do
+                        if unit.Name == "unit_molten_flower" then
+                            local uid = getUnitId(unit)
+                            if uid and not table.find(specialUnitsIDs, uid) then
+                                table.insert(specialUnitsIDs, uid)
+                                break
+                            end
+                        end
+                    end
+                    addLog(("🪖 Спец. юнит #%d вокруг круга поставлен"):format(i))
+                else
+                    addLog("⚠️ Ошибка установки спец. юнита: "..tostring(err))
+                end
+                task.wait(0.3)
+            end
+            placedAroundSpecial = true
+        end
+
+        -- Функция апгрейда
+        local function upgradeUnitById(uid)
+            while uid and unitProgress[uid] and unitProgress[uid] < #UPGRADE_COSTS do
+                local cost = UPGRADE_COSTS[unitProgress[uid]+1]
+                if getCash() >= cost then
+                    local success, err = pcall(function()
+                        upgradeUnit:InvokeServer(uid)
+                    end)
+                    if success then
+                        unitProgress[uid] += 1
+                        addLog("⬆️ Юнит "..uid.." улучшен до "..unitProgress[uid])
+                    else
+                        addLog("⚠️ Ошибка апгрейда юнита "..uid..": "..tostring(err))
+                        break
+                    end
+                    task.wait(0.5)
+                else break end
+            end
+        end
+
+                -- Качаем сначала кукурузу
+        local function upgradeCorn()
             local units = getMyUnits()
-            for _, unit in ipairs(units) do
+            local cornUnits = {}
+
+            -- Собираем все кукурузы
+            for _,unit in ipairs(units) do
+                if unit.Name == "unit_buff_corn" then
+                    table.insert(cornUnits, unit)
+                end
+            end
+
+            -- Качаем каждую кукурузу по одной до максимума
+            for _,unit in ipairs(cornUnits) do
                 local uid = getUnitId(unit)
                 if uid then
-                    if not unitProgress[uid] then
-                        unitProgress[uid] = 0
-                    end
+                    if not unitProgress[uid] then unitProgress[uid] = 0 end
                     local level = unitProgress[uid]
-                    if level < #UPGRADE_COSTS then
+
+                    while level < #UPGRADE_COSTS do
                         local cost = UPGRADE_COSTS[level + 1]
                         if getCash() >= cost then
                             local success, err = pcall(function()
                                 upgradeUnit:InvokeServer(uid)
                             end)
                             if success then
-                                unitProgress[uid] = level + 1
-                                addLog(("⬆️ Юнит %d улучшен до уровня %d (💰 %d)"):format(uid, unitProgress[uid], cost))
+                                level += 1
+                                unitProgress[uid] = level
+                                addLog(("⬆️ Кукуруза %d → %d (💰 %d)"):format(uid, level, cost))
                                 task.wait(0.5)
                             else
-                                addLog("⚠️ Ошибка улучшения юнита " .. tostring(uid) .. ": " .. tostring(err))
+                                addLog("⚠️ Ошибка апгрейда кукурузы "..uid..": "..tostring(err))
+                                break
                             end
+                        else
+                            -- если денег нет — выходим из цикла
+                            break
                         end
                     end
                 end
-                task.wait(0.1)
             end
         end
 
-        -- Авто-скип волн
+
+        -- Качаем 4 спец. юнита
+        local function upgradeSpecialAround()
+            for _,uid in ipairs(specialUnitsIDs) do
+                if not unitProgress[uid] then unitProgress[uid]=0 end
+                upgradeUnitById(uid)
+            end
+        end
+
+        -- Качаем остальные юниты
+        local function upgradeOthers()
+            local units = getMyUnits()
+            for _,unit in ipairs(units) do
+                if unit.Name ~= "unit_buff_corn" and not table.find(specialUnitsIDs,getUnitId(unit)) then
+                    local uid = getUnitId(unit)
+                    if uid and not unitProgress[uid] then unitProgress[uid]=0 end
+                    upgradeUnitById(uid)
+                end
+            end
+        end
+
         local function autoSkip()
             pcall(function()
                 skipWave:InvokeServer({"y"})
             end)
         end
 
-        -- Сброс цикла фарма
         local function resetCycle()
             placedUnits = 0
             unitProgress = {}
+            placedCentral = false
+            placedAroundSpecial = false
+            specialUnitsIDs = {}
             addLog("🔄 Новый цикл фарма.")
         end
 
-        -- Получение уровня из текста
         local function getLevelFromTitle()
             local text = titleLabel.Text or ""
-            local level = text:match("Level%s+(%d+)")
-            return tonumber(level)
+            return tonumber(text:match("Level%s+(%d+)"))
         end
 
-        -- Главный цикл
         while farming do
             local lvl = getLevelFromTitle()
             if lvl and lvl ~= currentLevel then
@@ -359,17 +475,30 @@ startBtn.MouseButton1Click:Connect(function()
                 resetCycle()
             end
 
-            -- Голосование
+            if not placedCentral then
+                placeCentralSpecial()
+            elseif placedUnits < UNIT_COUNT then
+                if getCash() >= UNIT_COST then
+                    placeUnitAtIndex(placedUnits+1)
+                    task.wait(0.5)
+                end
+            else
+                -- Качаем кукурузу
+                upgradeCorn()
+                -- Ставим 4 спец. юнита
+                placeAroundSpecial()
+                upgradeSpecialAround()
+                -- Апгрейд остальных
+                upgradeOthers()
+            end
+
             if screenMiddle:FindFirstChild("DifficultyVote") and screenMiddle.DifficultyVote.Visible then
-                local args = { "dif_impossible" }
-                voteDifficulty:InvokeServer(unpack(args))
+                voteDifficulty:InvokeServer("dif_impossible")
                 addLog("🗳️ Проголосовал за dif_impossible.")
                 task.wait(1)
                 continue
             end
 
-
-            -- Конец игры
             if screenMiddle:FindFirstChild("GameEnd") and screenMiddle.GameEnd.Visible then
                 restartGame:InvokeServer()
                 addLog("🔁 Перезапуск игры.")
@@ -378,23 +507,14 @@ startBtn.MouseButton1Click:Connect(function()
                 continue
             end
 
-            -- Автоскип
             autoSkip()
-
-            -- Постановка юнитов
-            if placedUnits < UNIT_COUNT then
-                if getCash() >= UNIT_COST then
-                    placeUnitAtIndex(placedUnits)
-                    task.wait(0.5)
-                end
-            else
-                tryUpgradeUnits()
-            end
-
             task.wait(1)
         end
     end)
 end)
+
+
+
 
 -- Вкладка Utilities
 local utilitiesPage = pages["Utilities"]
@@ -427,9 +547,6 @@ infYieldBtn.MouseButton1Click:Connect(function()
     end)
 
     addLog("✅ Inf Yield успешно загружен.")
-
-
-    end
 end)
 
 -- Обновляем CanvasSize для прокрутки по размеру контента
@@ -498,17 +615,18 @@ local function createAntiAFKGui()
     timerLabel.TextXAlignment = Enum.TextXAlignment.Left
     timerLabel.Text = "Idle Time: 0s"
 
-    -- Логика
     local toggleEnabled = false
     local localIdleTime = 0
+    local lastResetTime = 0
 
     local function resetIdle()
         VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        VirtualUser:ClickButton2()
     end
 
     local function onInput()
         localIdleTime = 0
+        lastResetTime = 0
     end
 
     toggleBtn.MouseButton1Click:Connect(function()
@@ -517,10 +635,12 @@ local function createAntiAFKGui()
             toggleBtn.Text = "ON"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
             localIdleTime = 0
+            lastResetTime = 0
         else
             toggleBtn.Text = "OFF"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
             localIdleTime = 0
+            lastResetTime = 0
         end
     end)
 
@@ -532,19 +652,21 @@ local function createAntiAFKGui()
             localIdleTime = localIdleTime + dt
             timerLabel.Text = ("Idle Time: %.0fs"):format(localIdleTime)
 
-            if math.floor(localIdleTime) % 15 == 0 then
+            if localIdleTime - lastResetTime >= 15 then
                 resetIdle()
+                lastResetTime = localIdleTime
                 VirtualUser:CaptureController()
                 VirtualUser:MoveMouseRel(math.random(-1, 1), math.random(-1, 1))
             end
         else
             localIdleTime = 0
+            lastResetTime = 0
             timerLabel.Text = "Idle Time: 0s"
         end
     end)
 end
 
--- Обработчик кнопки
+
 antiAFKBtn.MouseButton1Click:Connect(function()
     if not antiAFKGui then
         createAntiAFKGui()
