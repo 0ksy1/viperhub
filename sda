@@ -1,0 +1,162 @@
+return {
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -849.1759033203125, 61.93030548095703, -146.0496368408203,
+    },
+    ["identifier"] = 1,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -857.3809814453125, 62.18030548095703, -135.96080017089844,
+    },
+    ["identifier"] = 2,
+    ["action"] = "place",
+    ["unitType"] = "unit_lawnmower",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -848.72509765625, 61.93030548095703, -162.75234985351562,
+    },
+    ["identifier"] = 3,
+    ["action"] = "place",
+    ["unitType"] = "unit_dragon_head",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -860.5859985351562, 61.93030548095703, -156.7902069091797,
+    },
+    ["identifier"] = 4,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -856.2967529296875, 61.93030548095703, -157.0533447265625,
+    },
+    ["identifier"] = 5,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -860.4801025390625, 61.93030548095703, -154.4771728515625,
+    },
+    ["identifier"] = 6,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+}
