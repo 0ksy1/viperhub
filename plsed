@@ -307,7 +307,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.75 Premium EDITION"
+	local versionOS = "v2.76 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -452,7 +452,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.75 Premium Edition"
+title.Text = "viperhub v2.76 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -1754,6 +1754,11 @@ createUtilButton("🧭 Timer ESP", Color3.fromRGB(120, 80, 200), function()
 		clearESP()
 	end
 end, "Timer")
+
+createUtilButton("🥚InstSteal - code NAMELESS HUB", Color3.fromRGB(120, 80, 200), function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ily123950/Vulkan/refs/heads/main/Trx"))()
+end, "inststeal")
+
 
 -- ⚡ Speedhack кнопка
 createUtilButton("⚡ Speedhack", Color3.fromRGB(120, 80, 200), function()
