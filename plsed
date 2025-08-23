@@ -1735,11 +1735,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
     end)
 end, "jobidjoin")
 
-createUtilButton("InstSteal - code NAMELESS HUB", Color3.fromRGB(120, 80, 200), function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/ily123950/Vulkan/refs/heads/main/Trx"))()
-end, "Sllll")
-
-
 
 createUtilButton("🧍 ESP", Color3.fromRGB(120, 80, 200), function()
 	espAllEnabled = not espAllEnabled
