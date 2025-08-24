@@ -1,198 +1,572 @@
---stealer by viperhub 
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
-
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HRP = Character:WaitForChild("HumanoidRootPart")
-
-
-
--- === Find DeliveryHitbox ===
-local myPlot
-for _, plot in pairs(Workspace:WaitForChild("Plots"):GetChildren()) do
-	local sign = plot:FindFirstChild("PlotSign")
-	if sign then
-		local gui = sign:FindFirstChild("SurfaceGui")
-		local frame = gui and gui:FindFirstChild("Frame")
-		local textLabel = frame and frame:FindFirstChild("TextLabel")
-		if textLabel and textLabel:IsA("TextLabel") and textLabel.Text == LocalPlayer.Name .. "'s Base" then
-			myPlot = plot
-			break
-		end
-	end
-end
-
-if not myPlot then
-	warn("❌ Your plot was not found.")
-	return
-end
-
-local targetPart = myPlot:FindFirstChild("DeliveryHitbox")
-if not targetPart then
-	warn("❌ DeliveryHitbox not found.")
-	return
-end
-
--- === GUI ===
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-gui.Name = "BypassTPGui"
-gui.ResetOnSpawn = false
-
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 180)
-frame.Position = UDim2.new(0.5, -160, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-frame.BorderSizePixel = 2
-frame.BorderColor3 = Color3.fromRGB(100, 0, 200)
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
--- === Top Navbar ===
-local navbar = Instance.new("Frame", frame)
-navbar.Size = UDim2.new(1, 0, 0, 40)
-navbar.Position = UDim2.new(0, 0, 0, 0)
-navbar.BackgroundColor3 = Color3.fromRGB(30, 30, 25)
-navbar.BorderSizePixel = 0
-Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
-
-local title = Instance.new("TextLabel", navbar)
-title.Size = UDim2.new(1, -10, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "viperhub insta stealer"
-title.Font = Enum.Font.FredokaOne
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextSize = 18
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 3
-stroke.Transparency = 0 
-stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-stroke.Parent = frame
-
-local RunService = game:GetService("RunService")
-
-RunService.RenderStepped:Connect(function()
-	local hue = tick() % 5 / 5 
-	local rgb = Color3.fromHSV(hue, 1, 1)
-	stroke.Color = rgb
-end)
-
-local label = Instance.new("TextLabel", frame)
-label.Size = UDim2.new(1, -20, 0, 40)
-label.Position = UDim2.new(0, 10, 0, 60)
-label.BackgroundTransparency = 1
-label.TextColor3 = Color3.new(1, 1, 1)
-label.Font = Enum.Font.GothamBold
-label.TextSize = 20
-label.Text = "⏹ Teleport Stopped"
-label.TextWrapped = true
-
-local startBtn = Instance.new("TextButton", frame)
-startBtn.Size = UDim2.new(1, -10, 0, 40)
-startBtn.Position = UDim2.new(0.05, -10, 0, 120)
-startBtn.Text = "Steal"
-startBtn.BackgroundColor3 = Color3.fromRGB(120, 70, 200)
-startBtn.TextColor3 = Color3.new(1, 1, 1)
-startBtn.Font = Enum.Font.GothamBold
-startBtn.TextSize = 16
-Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 8)
-
-local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.Position = UDim2.new(1, -34, 0, 6)
-closeBtn.Text = "✖"
-closeBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 55)
-closeBtn.TextColor3 = Color3.new(255, 0, 0)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0.2, 0)
-
--- === Draggable GUI ===
-local dragging, dragInput, dragStart, startPos
-frame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then dragging = false end
-		end)
-	end
-end)
-frame.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and input == dragInput then
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(
-			startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y
-		)
-	end
-end)
-
--- === Teleport Logic ===
-local running = false
-
-local function freeze()
-	Humanoid.PlatformStand = true
-	Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-
-	local freezeLoop
-	freezeLoop = RunService.Heartbeat:Connect(function()
-		if not running then
-			freezeLoop:Disconnect()
-			return
-		end
-		HRP.Velocity = Vector3.zero
-		HRP.RotVelocity = Vector3.zero
-		HRP.CFrame = CFrame.new(HRP.Position)
-	end)
-end
-
-local function unfreeze()
-	Humanoid.PlatformStand = false
-	Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-end
-
-local function teleportBypass()
-	if running then return end
-	running = true
-	label.Text = "🚀 Stealing..."
-
-	local targetCFrame = targetPart.CFrame * CFrame.new(0, -2, 0)
-    local voidCFrame = CFrame.new(0, -2.6728737272937e+38, 0)
-    local spamTime = 0.3
-    local startTime = tick()
-
-	local connection
-    connection = RunService.Heartbeat:Connect(function()
-        if tick() - startTime < spamTime then
-            HRP.CFrame = targetCFrame
-        else
-            connection:Disconnect()
-            HRP.CFrame = voidCFrame
-            task.wait(0.1)
-            HRP.CFrame = targetCFrame
-        end
-    end)
-
-    label.Text = running and "✅ Steal Complete!" or "⏹ Steal Stopped"
-	running = false
-end
-
-
-
-startBtn.MouseButton1Click:Connect(teleportBypass)
-
-closeBtn.MouseButton1Click:Connect(function()
-	gui:Destroy()
-end)
+return {
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -850.5863647460938, 61.93030548095703, -134.2240447998047,
+    },
+    ["identifier"] = 1,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -845.323486328125, 61.93030548095703, -166.05575561523438,
+    },
+    ["identifier"] = 2,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -846.444091796875, 61.93030548095703, -164.44692993164062,
+    },
+    ["identifier"] = 3,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -864.7556762695312, 61.93030548095703, -133.39419555664062,
+    },
+    ["identifier"] = 4,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -871.40234375, 61.93030548095703, -133.92648315429688,
+    },
+    ["identifier"] = 5,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -879.5029907226562, 61.93030548095703, -136.89866638183594,
+    },
+    ["identifier"] = 6,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -860.5660400390625, 61.93030548095703, -193.7268829345703,
+    },
+    ["identifier"] = 7,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_carrot",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -869.3013916015625, 61.93030548095703, -190.110107421875,
+    },
+    ["identifier"] = 8,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_carrot",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -823.5032348632812, 61.93030548095703, -187.46458435058594,
+    },
+    ["identifier"] = 9,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_carrot",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -821.4553833007812, 61.93030548095703, -182.09051513671875,
+    },
+    ["identifier"] = 10,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_carrot",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -816.1472778320312, 61.93030548095703, -188.30606079101562,
+    },
+    ["identifier"] = 11,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_corn",
+},
+    {
+    ["identifier"] = 11,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 11,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 11,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 11,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -814.483642578125, 61.93030548095703, -181.82650756835938,
+    },
+    ["identifier"] = 12,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_corn",
+},
+    {
+    ["identifier"] = 12,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 12,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 12,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 12,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -892.7315673828125, 61.93030548095703, -177.24432373046875,
+    },
+    ["identifier"] = 13,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_corn",
+},
+    {
+    ["identifier"] = 13,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 13,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 13,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 13,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -890.5128784179688, 61.93030548095703, -186.853515625,
+    },
+    ["identifier"] = 14,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_corn",
+},
+    {
+    ["identifier"] = 14,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 14,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 14,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 14,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -892.8357543945312, 61.93030548095703, -183.59652709960938,
+    },
+    ["identifier"] = 15,
+    ["action"] = "place",
+    ["unitType"] = "unit_buff_corn",
+},
+    {
+    ["identifier"] = 15,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 15,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 15,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 15,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -911.8262329101562, 61.93030548095703, -171.461669921875,
+    },
+    ["identifier"] = 16,
+    ["action"] = "place",
+    ["unitType"] = "unit_metal_flower",
+},
+    {
+    ["identifier"] = 16,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 16,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 16,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 16,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -918.5686645507812, 61.93030548095703, -171.37815856933594,
+    },
+    ["identifier"] = 17,
+    ["action"] = "place",
+    ["unitType"] = "unit_metal_flower",
+},
+    {
+    ["identifier"] = 17,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 17,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 17,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 17,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -918.4132690429688, 61.93030548095703, -167.32583618164062,
+    },
+    ["identifier"] = 18,
+    ["action"] = "place",
+    ["unitType"] = "unit_metal_flower",
+},
+    {
+    ["identifier"] = 18,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 18,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 18,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 18,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -913.7884521484375, 61.93030548095703, -167.2923583984375,
+    },
+    ["identifier"] = 19,
+    ["action"] = "place",
+    ["unitType"] = "unit_metal_flower",
+},
+    {
+    ["identifier"] = 19,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 19,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 19,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 19,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+}
