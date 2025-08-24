@@ -1,0 +1,302 @@
+return {
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -852.5426635742188, 61.93030548095703, -133.22036743164062,
+    },
+    ["identifier"] = 1,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 1,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -846.7056884765625, 61.93030548095703, -164.4131622314453,
+    },
+    ["identifier"] = 2,
+    ["action"] = "place",
+    ["unitType"] = "unit_cabbage",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 2,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -848.0119018554688, 61.93030548095703, -153.92990112304688,
+    },
+    ["identifier"] = 3,
+    ["action"] = "place",
+    ["unitType"] = "unit_brightflower",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -860.7486572265625, 61.93030548095703, -111.74080657958984,
+    },
+    ["identifier"] = 4,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -855.0768432617188, 61.93030548095703, -152.67446899414062,
+    },
+    ["identifier"] = 5,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -859.26123046875, 61.93030548095703, -151.9298095703125,
+    },
+    ["identifier"] = 6,
+    ["action"] = "place",
+    ["unitType"] = "unit_golem_dragon",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 3,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -847.8406982421875, 61.93030548095703, -150.04588317871094,
+    },
+    ["identifier"] = 7,
+    ["action"] = "place",
+    ["unitType"] = "unit_sprinkler",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 7,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -835.2120971679688, 61.93030548095703, -157.14479064941406,
+    },
+    ["identifier"] = 8,
+    ["action"] = "place",
+    ["unitType"] = "unit_brightflower",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -833.3760986328125, 61.93030548095703, -142.71058654785156,
+    },
+    ["identifier"] = 9,
+    ["action"] = "place",
+    ["unitType"] = "unit_brightflower",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 9,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 5,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 6,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 8,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["config"] = {
+        ["Rotation"] = 180,
+        ["Valid"] = true,
+        ["Position"] = -837.0487670898438, 61.93030548095703, -147.95468139648438,
+    },
+    ["identifier"] = 10,
+    ["action"] = "place",
+    ["unitType"] = "unit_brightflower",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 10,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+    {
+    ["identifier"] = 4,
+    ["action"] = "upgrade",
+    ["unitType"] = "unknown",
+},
+}
