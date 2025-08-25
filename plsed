@@ -1324,7 +1324,211 @@ for name, state in pairs(petsToFind) do
 end
 
 
+--esp
 
+
+local function createESP(char, tag)
+	if char:FindFirstChild(tag) then return end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = tag
+	highlight.FillTransparency = 0.5
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.OutlineTransparency = 0
+	highlight.Adornee = char
+	highlight.Parent = char
+
+
+	local start = tick()
+	RunService.RenderStepped:Connect(function()
+		if not highlight or not highlight.Parent then return end
+		local t = tick() - start
+		local r = math.sin(t * 2) * 0.5 + 0.5
+		local g = math.sin(t * 2 + 2) * 0.5 + 0.5
+		local b = math.sin(t * 2 + 4) * 0.5 + 0.5
+		highlight.FillColor = Color3.new(r, g, b)
+	end)
+end
+
+local function removeESP(char, tag)
+  local esp = char:FindFirstChild(tag)
+  if esp then esp:Destroy() end
+end
+
+local function createMarker(root)
+  if not root:FindFirstChild("AntiInvisMarker") then
+    local marker = Instance.new("BillboardGui")
+    marker.Name = "AntiInvisMarker"
+    marker.Adornee = root
+    marker.Size = UDim2.new(0, 100, 0, 40)
+    marker.AlwaysOnTop = true
+    marker.StudsOffset = Vector3.new(0, 3, 0)
+    marker.Parent = root
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "👻 Hidden Player"
+    label.TextColor3 = Color3.new(1, 0, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = marker
+  end
+end
+
+local function removeMarker(root)
+  local m = root:FindFirstChild("AntiInvisMarker")
+  if m then m:Destroy() end
+end
+
+local function isInvisible(char)
+  for _, part in pairs(char:GetDescendants()) do
+    if part:IsA("BasePart") and part.Transparency < 0.98 and part.Name ~= "HumanoidRootPart" then
+      return false
+    end
+  end
+  return true
+end
+
+local function updateESP()
+  for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+      local char = player.Character
+      if char and char:IsDescendantOf(workspace) then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local invis = isInvisible(char)
+
+        if espAllEnabled then
+          createESP(char, "ESP_All")
+        else
+          removeESP(char, "ESP_All")
+        end
+
+        if espInvisEnabled and invis then
+          createESP(char, "ESP_Invis")
+          if root then createMarker(root) end
+        else
+          removeESP(char, "ESP_Invis")
+          if root then removeMarker(root) end
+        end
+      end
+    end
+  end
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+  if gpe then return end
+  if input.KeyCode == Enum.KeyCode.Q then
+    espInvisEnabled = not espInvisEnabled
+    print("👻 ESP Invisibles: " .. (espInvisEnabled and "ON" or "OFF"))
+  elseif input.KeyCode == Enum.KeyCode.E then
+    espAllEnabled = not espAllEnabled
+    print("🧍 ESP All Players: " .. (espAllEnabled and "ON" or "OFF"))
+  end
+end)
+
+RunService.Stepped:Connect(function()
+  if espInvisEnabled or espAllEnabled then
+    updateESP()
+  end
+end)
+
+local function clearESP()
+	for _, data in pairs(espConnections) do
+		if data.gui then
+			data.gui:Destroy()
+		end
+	end
+	espConnections = {}
+	updating = false
+end
+
+
+local function createESP(plotModel, adorneePart, remainingTextObj)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ESP_RemainingTime"
+	billboard.Adornee = adorneePart
+	billboard.Size = UDim2.new(0, 200, 0, 50)
+	billboard.StudsOffset = Vector3.new(0, 5, 0)
+	billboard.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = ""
+	label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+	label.TextStrokeTransparency = 0
+	label.TextScaled = true
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = billboard
+
+	billboard.Parent = adorneePart
+
+
+	espConnections[plotModel] = {
+		gui = billboard,
+		label = label,
+		sourceText = remainingTextObj
+	}
+end
+
+
+function scanAndCreateESP()
+	clearESP()
+
+	local plots = Workspace:FindFirstChild("Plots")
+	if not plots then return end
+
+	for _, plot in ipairs(plots:GetChildren()) do
+		local purchases = plot:FindFirstChild("Purchases")
+		if purchases then
+			local block = purchases:FindFirstChild("PlotBlock")
+			if block and block:FindFirstChild("Main") then
+				local main = block.Main
+				local gui = main:FindFirstChild("BillboardGui")
+				if gui and gui:FindFirstChild("RemainingTime") then
+					local remainingText = gui.RemainingTime
+					if remainingText.Text and remainingText.Text ~= "" then
+						createESP(plot, main, remainingText)
+					end
+				end
+			end
+		end
+	end
+end
+
+function startUpdatingESP()
+	if updating then return end
+	updating = true
+
+
+	RunService.RenderStepped:Connect(function()
+		if not updating then return end
+		hue = (hue + 0.002) % 1
+		for _, data in pairs(espConnections) do
+			if data.label then
+				data.label.TextColor3 = Color3.fromHSV(hue, 1, 1)
+			end
+		end
+	end)
+
+
+	task.spawn(function()
+		while updating do
+			for _, data in pairs(espConnections) do
+				if data.label and data.sourceText then
+					local txt = data.sourceText.Text
+					if txt == "60s" or txt == "" then
+						data.label.Text = "Open"
+					else
+						data.label.Text = txt
+					end
+				end
+			end
+			task.wait(1)
+		end
+	end)
+end
 
 
 local HttpService = game:GetService("HttpService")
