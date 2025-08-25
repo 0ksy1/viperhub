@@ -58,6 +58,7 @@ local petsToFind = {
 	    ["Nooo My Hotspot"] = true,
 	    ["Job Job Job Sahur"] = true,
 	    ["Los Matteos"] = true,
+		["La Esok Sekolah"] = true,
 	    ["Chicleteira Bicicletera"] = true
 
 }
