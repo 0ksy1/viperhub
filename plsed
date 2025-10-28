@@ -93,6 +93,15 @@ local petsToFind = {
         ["Los Chicleteiras"] = true,
         ["Burrito Bandito"] = true,
         ["Quesadillo Vampiro"] = true,
+        ["La Sahur Combinasion"] = true,
+        ["Telemorte"] = true,
+        ["Horegini Boom"] = true,
+        ["Noo my examine"] = true,
+        ["Telemorte"] = true,
+        ["Horegini Boom"] = true,
+        ["La Sahur Combinasion"] = true,
+        ["Noo My Hotspot"] = true,
+        ["Perrito Burrito"] = true,
 	    ["Chicleteira Bicicletera"] = true
 
 }
