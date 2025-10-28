@@ -101,6 +101,7 @@ local petsToFind = {
         ["Horegini Boom"] = true,
         ["La Sahur Combinasion"] = true,
         ["Noo My Hotspot"] = true,
+        ["Los Mobilis"] = true,
         ["Perrito Burrito"] = true,
 	    ["Chicleteira Bicicletera"] = true
 
