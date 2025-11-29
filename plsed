@@ -824,61 +824,45 @@ local function getOrCreatePlayerAttachment()
 	return att
 end
 
-
 local function getMutationMap()
 	local mutationMap = {}
 	local plots = workspace:FindFirstChild("Plots")
 	if not plots then return mutationMap end
 
 	for _, plot in ipairs(plots:GetChildren()) do
-		for _, petModel in ipairs(plot:GetChildren()) do
-			if petModel:IsA("Model") then
-				local overhead = nil
+		-- Перебираем все вложенные объекты рекурсивно
+		for _, overhead in ipairs(plot:GetDescendants()) do
+			if overhead:IsA("BillboardGui") and overhead.Name == "AnimalOverhead" then
+				local displayName = overhead:FindFirstChild("DisplayName")
+				local generation = overhead:FindFirstChild("Generation")
+				if displayName and displayName:IsA("TextLabel") and generation and generation:IsA("TextLabel") then
+					-- Парсим доход
+					local genText = generation.Text
+					local number = string.match(genText, "%$(%d+%.?%d*)M")
+					local income = number and tonumber(number) * 1e6 or 0
+					if income >= 5e6 then
+						local mutation = overhead:FindFirstChild("Mutation")
+						local stolen = overhead:FindFirstChild("Stolen")
 
-				-- ищем AnimalOverhead
-				for _, part in ipairs(petModel:GetDescendants()) do
-					if part:IsA("BillboardGui") and part.Name == "AnimalOverhead" then
-						overhead = part
-						break
-					end
-				end
-
-				if overhead then
-					local displayName = overhead:FindFirstChild("DisplayName")
-					local mutation = overhead:FindFirstChild("Mutation")
-					local generation = overhead:FindFirstChild("Generation")
-					local stolen = overhead:FindFirstChild("Stolen")
-
-					if displayName and displayName:IsA("TextLabel") then
-						-- Если НЕТ generation → пропустить пета полностью
-						if not (generation and generation:IsA("TextLabel") and generation.Text ~= "") then
-							continue
-						end
-
-						local name = displayName.Text
 						local mutationText = nil
-
-						-- IN MACHINE
 						if stolen and stolen:IsA("TextLabel") and stolen.Visible and stolen.Text == "IN MACHINE" then
 							mutationText = "📘IN MACHINE📘"
 						elseif mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
 							mutationText = "⭐️" .. mutation.Text .. "⭐️"
 						end
 
-						local generationText = generation.Text
-
-						-- Позиция пета
-						local rootPart = petModel:FindFirstChild("HumanoidRootPart")
-							or petModel:FindFirstChild("Root")
-							or petModel:FindFirstChildWhichIsA("BasePart")
-
-						local petPos = rootPart and rootPart.Position or Vector3.new(0, 0, 0)
+						-- Находим "модель" пета — родителя AnimalOverhead
+						local rootModel = overhead:FindFirstAncestorWhichIsA("Model")
+						local rootPart = rootModel and (rootModel:FindFirstChild("HumanoidRootPart") or rootModel:FindFirstChildWhichIsA("BasePart"))
+						local petPos = rootPart and rootPart.Position or Vector3.new(0,0,0)
 
 						table.insert(mutationMap, {
-							name = name,
+							name = displayName.Text,
 							position = petPos,
 							mutation = mutationText,
-							generation = generationText
+							generation = genText,
+							model = rootModel,
+							rootPart = rootPart
 						})
 					end
 				end
@@ -895,134 +879,77 @@ local function scanForPets()
 	local foundCount = {}
 	local alreadyTagged = {}
 	local mutationData = getMutationMap()
-
 	local playerAtt = getOrCreatePlayerAttachment()
 
-	-- Папка с фейковыми питомцами
-	local adventCalendar = Workspace:FindFirstChild("AdventCalendar")
-	local brainrotsFolder = adventCalendar and adventCalendar:FindFirstChild("Brainrots")
+	for _, data in ipairs(mutationData) do
+		if not data.rootPart then continue end
+		if alreadyTagged[data.model] then continue end
 
-	for _, obj in pairs(Workspace:GetDescendants()) do
+		-- Создаем BillboardGui с мутацией
+		if not data.model:FindFirstChild("PetTag") then
+			local tag = Instance.new("BillboardGui")
+			tag.Name = "PetTag"
+			tag.Size = UDim2.new(0, 140, 0, 80)
+			tag.AlwaysOnTop = true
+			tag.StudsOffset = Vector3.new(0, 3, 0)
+			tag.Parent = data.model
 
-		-- Пропускаем модели из Brainrots
-		if brainrotsFolder and obj:IsDescendantOf(brainrotsFolder) then
-			continue
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.new(1, 0, 1, 0)
+			label.BackgroundTransparency = 1
+			label.TextColor3 = Color3.new(1, 1, 1)
+			label.TextStrokeTransparency = 0.5
+			label.TextScaled = true
+			label.Font = Enum.Font.GothamBold
+
+			local labelText = (data.mutation and data.mutation .. " " or "") .. data.name .. " - " .. data.generation .. " ✅"
+			label.Text = labelText
+			label.Parent = tag
+
+			pulseRGB(label)
 		end
 
-		if petsToFind[obj.Name] and obj:IsA("Model") then
-			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-			if root and myPlotMin and myPlotMax then
-				local pos = root.Position
-				if pos.X >= myPlotMin.X and pos.X <= myPlotMax.X
-				and pos.Y >= myPlotMin.Y and pos.Y <= myPlotMax.Y
-				and pos.Z >= myPlotMin.Z and pos.Z <= myPlotMax.Z then
-					continue 
-				end
+		-- Beam
+		local petAtt = Instance.new("Attachment")
+		petAtt.Name = "PetBeamAttachment"
+		petAtt.Parent = data.rootPart
+
+		local beam = Instance.new("Beam")
+		beam.Name = "PetBeam"
+		beam.Attachment0 = playerAtt
+		beam.Attachment1 = petAtt
+		beam.Width0 = 0.15
+		beam.Width1 = 0.15
+		beam.LightEmission = 1
+		beam.Transparency = NumberSequence.new(0.1)
+		beam.FaceCamera = true
+		beam.Parent = data.rootPart
+
+		task.spawn(function()
+			while beam and beam.Parent do
+				local hue = tick() % 5 / 5
+				local color = Color3.fromHSV(hue, 1, 1)
+				beam.Color = ColorSequence.new(color)
+				task.wait(0.1)
 			end
+		end)
 
-			if root and obj:IsDescendantOf(Workspace) and not alreadyTagged[obj] then
-				if (root.Position - hrp.Position).Magnitude < 5000 then
+		table.insert(petBeams, beam)
 
-					local mutationType = nil
-					local generationText = "Unknown"
-
-					for _, data in ipairs(mutationData) do
-						local dataNameLower = string.lower(data.name)
-						local objNameLower = string.lower(obj.Name)
-						local distance = (data.position - root.Position).Magnitude
-						local exactMatch = (dataNameLower == objNameLower)
-						local partialMatch = string.find(dataNameLower, objNameLower) or string.find(objNameLower, dataNameLower)
-
-						if exactMatch and distance < 7 then
-							mutationType = data.mutation
-							generationText = data.generation
-							break
-						elseif partialMatch and distance < 3 then
-							mutationType = data.mutation
-							generationText = data.generation
-							break
-						end
-					end
-
-					-- Пропускаем петов без generation
-					if generationText == "Unknown" then
-						continue
-					end
-
-					if not obj:FindFirstChild("PetTag") then
-						local tag = Instance.new("BillboardGui")
-						tag.Name = "PetTag"
-						tag.Size = UDim2.new(0, 140, 0, 80)
-						tag.AlwaysOnTop = true
-						tag.StudsOffset = Vector3.new(0, 3, 0)
-						tag.Parent = obj
-
-						local label = Instance.new("TextLabel")
-						label.Size = UDim2.new(1, 0, 1, 0)
-						label.BackgroundTransparency = 1
-						label.TextColor3 = Color3.new(1, 1, 1)
-						label.TextStrokeTransparency = 0.5
-						label.TextScaled = true
-						label.Font = Enum.Font.GothamBold
-
-						local labelText = ""
-						if mutationType then
-							labelText = mutationType .. " "
-						end
-						labelText = labelText .. obj.Name .. " - " .. generationText .. " ✅"
-						label.Text = labelText
-						label.Parent = tag
-
-						pulseRGB(label)
-					end
-
-					local petAtt = Instance.new("Attachment")
-					petAtt.Name = "PetBeamAttachment"
-					petAtt.Parent = root
-
-					local beam = Instance.new("Beam")
-					beam.Name = "PetBeam"
-					beam.Attachment0 = playerAtt
-					beam.Attachment1 = petAtt
-					beam.Width0 = 0.15
-					beam.Width1 = 0.15
-					beam.LightEmission = 1
-					beam.Transparency = NumberSequence.new(0.1)
-					beam.FaceCamera = true
-					beam.Parent = root
-
-					task.spawn(function()
-						while beam and beam.Parent do
-							local hue = tick() % 5 / 5
-							local color = Color3.fromHSV(hue, 1, 1)
-							beam.Color = ColorSequence.new(color)
-							task.wait(0.1)
-						end
-					end)
-
-					table.insert(petBeams, beam)
-
-					local key = (mutationType and mutationType .. " " or "") .. obj.Name .. " - " .. generationText .. " ✅"
-					foundCount[key] = (foundCount[key] or 0) + 1
-					alreadyTagged[obj] = true
-				end
-			end
-		end
+		local key = (data.mutation and data.mutation .. " " or "") .. data.name .. " - " .. data.generation .. " ✅"
+		foundCount[key] = (foundCount[key] or 0) + 1
+		alreadyTagged[data.model] = true
 	end
 
-	-- Очистка старых результатов
+	-- Обновление GUI результатов
 	for _, child in ipairs(petResultFrame:GetChildren()) do
-		if child:IsA("TextLabel") then
-			child:Destroy()
-		end
+		if child:IsA("TextLabel") then child:Destroy() end
 	end
 
 	if next(foundCount) then
 		local displayLines = {}
-
 		for name, count in pairs(foundCount) do
 			local fullText = name .. " (x" .. count .. ")"
-
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(1, -10, 0, 22)
 			label.BackgroundTransparency = 1
@@ -1032,22 +959,12 @@ local function scanForPets()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Text = fullText
 			label.Parent = petResultFrame
-
 			table.insert(displayLines, fullText)
 		end
 
 		showPetNotification(table.concat(displayLines, "\n"))
-
-		if not playedSoundOnce then
-			playedSoundOnce = true
-			sound:Play()
-		end
-
-		if not sendedHOOK then
-			sendWebhook(displayLines)
-			sendedHOOK = true
-		end
-
+		if not playedSoundOnce then playedSoundOnce = true sound:Play() end
+		if not sendedHOOK then sendWebhook(displayLines) sendedHOOK = true end
 	else
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.new(1, -10, 0, 22)
