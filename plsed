@@ -103,6 +103,14 @@ local petsToFind = {
         ["Noo My Hotspot"] = true,
         ["Los Mobilis"] = true,
         ["Perrito Burrito"] = true,
+        ["Mieteteira Bicicleteira"] = true,
+        ["Orcaledon"] = true,
+        ["1x1x1x1"] = true,
+        ["Guest 666"] = true,
+        ["Quesadilla Crocodila"] = true,
+        ["Chillin Chilli"] = true,
+        ["La Extinct Grande"] = true,
+        ["La Spooky Grande"] = true,
 	    ["Chicleteira Bicicletera"] = true
 
 }
@@ -819,18 +827,21 @@ end
 
 local function getMutationMap()
 	local mutationMap = {}
-
-	local plots = Workspace:FindFirstChild("Plots")
+	local plots = workspace:FindFirstChild("Plots")
 	if not plots then return mutationMap end
 
 	for _, plot in ipairs(plots:GetChildren()) do
-		local podiums = plot:FindFirstChild("AnimalPodiums")
-		if podiums then
-			for _, podium in ipairs(podiums:GetChildren()) do
-				local base = podium:FindFirstChild("Base")
-				local spawn = base and base:FindFirstChild("Spawn")
-				local attachment = spawn and spawn:FindFirstChild("Attachment")
-				local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
+		for _, petModel in ipairs(plot:GetChildren()) do
+			if petModel:IsA("Model") then
+				local overhead = nil
+
+				-- ищем AnimalOverhead
+				for _, part in ipairs(petModel:GetDescendants()) do
+					if part:IsA("BillboardGui") and part.Name == "AnimalOverhead" then
+						overhead = part
+						break
+					end
+				end
 
 				if overhead then
 					local displayName = overhead:FindFirstChild("DisplayName")
@@ -838,21 +849,34 @@ local function getMutationMap()
 					local generation = overhead:FindFirstChild("Generation")
 					local stolen = overhead:FindFirstChild("Stolen")
 
-					if spawn and displayName and displayName:IsA("TextLabel") then
+					if displayName and displayName:IsA("TextLabel") then
+						-- Если НЕТ generation → пропустить пета полностью
+						if not (generation and generation:IsA("TextLabel") and generation.Text ~= "") then
+							continue
+						end
+
 						local name = displayName.Text
 						local mutationText = nil
 
+						-- IN MACHINE
 						if stolen and stolen:IsA("TextLabel") and stolen.Visible and stolen.Text == "IN MACHINE" then
 							mutationText = "📘IN MACHINE📘"
 						elseif mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
 							mutationText = "⭐️" .. mutation.Text .. "⭐️"
 						end
 
-						local generationText = (generation and generation:IsA("TextLabel") and generation.Text ~= "") and generation.Text or "Unknown"
+						local generationText = generation.Text
+
+						-- Позиция пета
+						local rootPart = petModel:FindFirstChild("HumanoidRootPart")
+							or petModel:FindFirstChild("Root")
+							or petModel:FindFirstChildWhichIsA("BasePart")
+
+						local petPos = rootPart and rootPart.Position or Vector3.new(0, 0, 0)
 
 						table.insert(mutationMap, {
 							name = name,
-							position = spawn.Position,
+							position = petPos,
 							mutation = mutationText,
 							generation = generationText
 						})
@@ -874,7 +898,17 @@ local function scanForPets()
 
 	local playerAtt = getOrCreatePlayerAttachment()
 
+	-- Папка с фейковыми питомцами
+	local adventCalendar = Workspace:FindFirstChild("AdventCalendar")
+	local brainrotsFolder = adventCalendar and adventCalendar:FindFirstChild("Brainrots")
+
 	for _, obj in pairs(Workspace:GetDescendants()) do
+
+		-- Пропускаем модели из Brainrots
+		if brainrotsFolder and obj:IsDescendantOf(brainrotsFolder) then
+			continue
+		end
+
 		if petsToFind[obj.Name] and obj:IsA("Model") then
 			local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
 			if root and myPlotMin and myPlotMax then
@@ -910,6 +944,11 @@ local function scanForPets()
 						end
 					end
 
+					-- Пропускаем петов без generation
+					if generationText == "Unknown" then
+						continue
+					end
+
 					if not obj:FindFirstChild("PetTag") then
 						local tag = Instance.new("BillboardGui")
 						tag.Name = "PetTag"
@@ -937,7 +976,6 @@ local function scanForPets()
 						pulseRGB(label)
 					end
 
-
 					local petAtt = Instance.new("Attachment")
 					petAtt.Name = "PetBeamAttachment"
 					petAtt.Parent = root
@@ -964,7 +1002,6 @@ local function scanForPets()
 
 					table.insert(petBeams, beam)
 
-
 					local key = (mutationType and mutationType .. " " or "") .. obj.Name .. " - " .. generationText .. " ✅"
 					foundCount[key] = (foundCount[key] or 0) + 1
 					alreadyTagged[obj] = true
@@ -973,6 +1010,7 @@ local function scanForPets()
 		end
 	end
 
+	-- Очистка старых результатов
 	for _, child in ipairs(petResultFrame:GetChildren()) do
 		if child:IsA("TextLabel") then
 			child:Destroy()
@@ -1022,6 +1060,7 @@ local function scanForPets()
 		label.Parent = petResultFrame
 	end
 end
+
 
 spawn(function()
 	while true do
