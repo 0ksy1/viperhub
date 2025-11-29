@@ -840,7 +840,7 @@ local function getMutationMap()
 					local genText = generation.Text
 					local number = string.match(genText, "%$(%d+%.?%d*)M")
 					local income = number and tonumber(number) * 1e6 or 0
-					if income >= 5e6 then
+					if income >= 15e6 then
 						local mutation = overhead:FindFirstChild("Mutation")
 						local stolen = overhead:FindFirstChild("Stolen")
 
