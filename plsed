@@ -170,6 +170,20 @@ _G.webhookUrl = loadWebhook()
 local webhookUrl = _G.webhookUrl or ""
 
 
+local minIncomeFile = "minIncomeSetting.json"
+local minIncomeValue = 15 -- дефолт 15 млн
+
+-- пробуем загрузить файл
+pcall(function()
+	if isfile(minIncomeFile) then
+		local data = game:GetService("HttpService"):JSONDecode(readfile(minIncomeFile))
+		if typeof(data.minIncome) == "number" then
+			minIncomeValue = data.minIncome
+		end
+	end
+end)
+
+
 
 local function bindCharacter(char)
     humanoid = char:WaitForChild("Humanoid")
@@ -829,42 +843,42 @@ local function getMutationMap()
 	local plots = workspace:FindFirstChild("Plots")
 	if not plots then return mutationMap end
 
-	for _, plot in ipairs(plots:GetChildren()) do
-		-- Перебираем все вложенные объекты рекурсивно
-		for _, overhead in ipairs(plot:GetDescendants()) do
-			if overhead:IsA("BillboardGui") and overhead.Name == "AnimalOverhead" then
-				local displayName = overhead:FindFirstChild("DisplayName")
-				local generation = overhead:FindFirstChild("Generation")
-				if displayName and displayName:IsA("TextLabel") and generation and generation:IsA("TextLabel") then
-					-- Парсим доход
-					local genText = generation.Text
-					local number = string.match(genText, "%$(%d+%.?%d*)M")
-					local income = number and tonumber(number) * 1e6 or 0
-					if income >= 15e6 then
-						local mutation = overhead:FindFirstChild("Mutation")
-						local stolen = overhead:FindFirstChild("Stolen")
+	for _, overhead in ipairs(plots:GetDescendants()) do
+		if overhead:IsA("BillboardGui") and overhead.Name == "AnimalOverhead" then
+			
+			local displayName = overhead:FindFirstChild("DisplayName")
+			local generation = overhead:FindFirstChild("Generation")
+			if displayName and generation then
 
-						local mutationText = nil
-						if stolen and stolen:IsA("TextLabel") and stolen.Visible and stolen.Text == "IN MACHINE" then
-							mutationText = "📘IN MACHINE📘"
-						elseif mutation and mutation:IsA("TextLabel") and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
-							mutationText = "⭐️" .. mutation.Text .. "⭐️"
-						end
+				-- Парсим доход: "$12.3M" → 12.3e6
+				local genText = generation.Text
+				local num = string.match(genText, "%$(%d+%.?%d*)M")
+				local income = num and tonumber(num) * 1e6 or 0
 
-						-- Находим "модель" пета — родителя AnimalOverhead
-						local rootModel = overhead:FindFirstAncestorWhichIsA("Model")
-						local rootPart = rootModel and (rootModel:FindFirstChild("HumanoidRootPart") or rootModel:FindFirstChildWhichIsA("BasePart"))
-						local petPos = rootPart and rootPart.Position or Vector3.new(0,0,0)
+				-- проверка на введённый минимальный доход
+				if income >= (minIncomeValue * 1e6) then
 
-						table.insert(mutationMap, {
-							name = displayName.Text,
-							position = petPos,
-							mutation = mutationText,
-							generation = genText,
-							model = rootModel,
-							rootPart = rootPart
-						})
+					local mutation = overhead:FindFirstChild("Mutation")
+					local stolen = overhead:FindFirstChild("Stolen")
+
+					local mutationText = nil
+					if stolen and stolen.Visible and stolen.Text == "IN MACHINE" then
+						mutationText = "📘IN MACHINE📘"
+					elseif mutation and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
+						mutationText = "⭐️" .. mutation.Text .. "⭐️"
 					end
+
+					local rootModel = overhead:FindFirstAncestorWhichIsA("Model")
+					local rootPart = rootModel and (rootModel:FindFirstChild("HumanoidRootPart") or rootModel:FindFirstChildWhichIsA("BasePart"))
+
+					table.insert(mutationMap, {
+						name = displayName.Text,
+						position = rootPart and rootPart.Position,
+						mutation = mutationText,
+						generation = genText,
+						model = rootModel,
+						rootPart = rootPart
+					})
 				end
 			end
 		end
@@ -872,6 +886,7 @@ local function getMutationMap()
 
 	return mutationMap
 end
+
 
 
 local function scanForPets()
@@ -982,37 +997,35 @@ end
 spawn(function()
 	while true do
 		scanForPets()
-		wait(0.1)
+		wait(0.01)
 	end
 end)
 
 local function hasWantedPets()
 	local mutationData = getMutationMap()
 
-	for name, enabled in pairs(petsToFind) do
-		if enabled then
-			for _, obj in pairs(Workspace:GetDescendants()) do
-				if obj:IsA("Model") and obj.Name == name then
-					local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-					if root then
-						for _, data in ipairs(mutationData) do
-							if string.lower(data.name) == string.lower(obj.Name) and (data.position - root.Position).Magnitude < 5 then
+	-- Если вообще нет петов — false
+	if #mutationData == 0 then
+		return false
+	end
 
-								if data.mutation == "📘IN MACHINE📘" then
-									break
-								end
+	for _, data in ipairs(mutationData) do
+		
+		-- НЕ останавливаемся, если пет в машине
+		if data.mutation == "📘IN MACHINE📘" then
+			continue
+		end
 
-								return true
-							end
-						end
-					end
-				end
-			end
+		-- Доход уже проверен внутри getMutationMap() (>= 1M)
+		-- Если есть DisplayName, Generation и модель — значит пет реальный
+		if data.name and data.generation and data.model then
+			return true
 		end
 	end
 
 	return false
 end
+
 
 
 local function teleportToNextServer()
@@ -1763,6 +1776,47 @@ saveButton.TextSize = 14
 saveButton.Text = "💾 Save Webhook"
 Instance.new("UICorner", saveButton)
 
+local incomeBox = Instance.new("TextBox", pages["Settings"])
+incomeBox.Size = UDim2.new(1, -20, 0, 35)
+incomeBox.Position = UDim2.new(0, 10, 0, 200)
+incomeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+incomeBox.TextColor3 = Color3.new(1, 1, 1)
+incomeBox.Font = Enum.Font.Gotham
+incomeBox.TextSize = 14
+incomeBox.Text = tostring(minIncomeValue) -- ставим сохранённое значение
+incomeBox.PlaceholderText = "Min Income (Millions)"
+incomeBox.ClearTextOnFocus = false
+Instance.new("UICorner", incomeBox)
+
+-- кнопка сохранить
+local saveIncomeBtn = Instance.new("TextButton", pages["Settings"])
+saveIncomeBtn.Size = UDim2.new(0.85, 0, 0, 32)
+saveIncomeBtn.Position = UDim2.new(0, 25, 0, 250)
+saveIncomeBtn.BackgroundColor3 = Color3.fromRGB(120, 80, 200)
+saveIncomeBtn.TextColor3 = Color3.new(1, 1, 1)
+saveIncomeBtn.Font = Enum.Font.GothamBold
+saveIncomeBtn.TextSize = 14
+saveIncomeBtn.Text = "💾 Save Minimum Income"
+Instance.new("UICorner", saveIncomeBtn)
+
+saveIncomeBtn.MouseButton1Click:Connect(function()
+	local newVal = tonumber(incomeBox.Text)
+	if newVal then
+		minIncomeValue = newVal
+		writefile(minIncomeFile, game:GetService("HttpService"):JSONEncode({
+			minIncome = minIncomeValue
+		}))
+		saveIncomeBtn.Text = "✔ Saved!"
+		task.delay(1.5, function()
+			saveIncomeBtn.Text = "💾 Save Minimum Income"
+		end)
+	else
+		saveIncomeBtn.Text = "❌ Error"
+		task.delay(1.5, function()
+			saveIncomeBtn.Text = "💾 Save Minimum Income"
+		end)
+	end
+end)
 
 
 
@@ -1790,32 +1844,6 @@ saveButton.MouseButton1Click:Connect(function()
 		saveButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 	end
 end)
-
-
-local serverIdBox = Instance.new("TextBox", pages["Settings"])
-serverIdBox.Size = UDim2.new(1, -20, 0, 35)
-serverIdBox.Position = UDim2.new(0, 10, 0, 200)
-serverIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-serverIdBox.TextColor3 = Color3.new(1, 1, 1)
-serverIdBox.Font = Enum.Font.Gotham
-serverIdBox.TextSize = 14
-serverIdBox.Text = "" 
-serverIdBox.PlaceholderText = "Enter Server ID..."
-serverIdBox.ClearTextOnFocus = false
-Instance.new("UICorner", serverIdBox)
-
-
-
-local joinButton = Instance.new("TextButton", pages["Settings"])
-joinButton.Size = UDim2.new(0.85, 0, 0, 32)
-joinButton.Position = UDim2.new(0, 25, 0, 250)
-joinButton.BackgroundColor3 = Color3.fromRGB(120, 80, 200)
-joinButton.TextColor3 = Color3.new(1, 1, 1)
-joinButton.Font = Enum.Font.GothamBold
-joinButton.TextSize = 14
-joinButton.Text = "🔗 Join Server"
-Instance.new("UICorner", joinButton)
-
 
 local textService = game:GetService("TextService")
 
@@ -1904,25 +1932,9 @@ infoLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvas)
 
 updateCanvas()
 
-
-
-
-joinButton.MouseButton1Click:Connect(function()
-	local serverId = serverIdBox.Text
-	if serverId ~= "" then
-		warn("[Join Server] Connecting to server:", serverId)
-		TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
-	else
-		warn("[Join Server] Please enter a valid Server ID!")
-	end
-end)
-
-
-
-
 if loadHopStatus() then
 	spawn(function()
-		wait(2) 
+		wait(1) 
 		if hasWantedPets() then
 			statusLabel.Text = "✅ Pets Found! AutoHop stopped"
 			isRunning = false
