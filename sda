@@ -1,162 +1,184 @@
-return {
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -849.1759033203125, 61.93030548095703, -146.0496368408203,
-    },
-    ["identifier"] = 1,
-    ["action"] = "place",
-    ["unitType"] = "unit_cabbage",
-},
-    {
-    ["identifier"] = 1,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 1,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 1,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -857.3809814453125, 62.18030548095703, -135.96080017089844,
-    },
-    ["identifier"] = 2,
-    ["action"] = "place",
-    ["unitType"] = "unit_lawnmower",
-},
-    {
-    ["identifier"] = 1,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -848.72509765625, 61.93030548095703, -162.75234985351562,
-    },
-    ["identifier"] = 3,
-    ["action"] = "place",
-    ["unitType"] = "unit_dragon_head",
-},
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -860.5859985351562, 61.93030548095703, -156.7902069091797,
-    },
-    ["identifier"] = 4,
-    ["action"] = "place",
-    ["unitType"] = "unit_golem_dragon",
-},
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -856.2967529296875, 61.93030548095703, -157.0533447265625,
-    },
-    ["identifier"] = 5,
-    ["action"] = "place",
-    ["unitType"] = "unit_golem_dragon",
-},
-    {
-    ["config"] = {
-        ["Rotation"] = 180,
-        ["Valid"] = true,
-        ["Position"] = -860.4801025390625, 61.93030548095703, -154.4771728515625,
-    },
-    ["identifier"] = 6,
-    ["action"] = "place",
-    ["unitType"] = "unit_golem_dragon",
-},
-    {
-    ["identifier"] = 3,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 3,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 3,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 3,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 5,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 5,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 5,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 5,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 4,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 4,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 4,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 4,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 6,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 6,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 6,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-    {
-    ["identifier"] = 6,
-    ["action"] = "upgrade",
-    ["unitType"] = "unknown",
-},
-}
+
+local GUI_URL = "https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/plsed"
+local KEYS_URL = "https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/passes.txt"
+local USED_HWID_URL = "https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/zabaneniylar.txt"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1394871503060860928/PHCKvVq7cVy7z6Q4Qx2vbmyw4tNGA_b0VEHomWjhbEX2FeB8mPUqx979j_ZpWaP7e6D0"
+
+local FILE_NAME = "AccessKeySaved.txt"
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RbxAnalytics = game:GetService("RbxAnalyticsService")
+local player = Players.LocalPlayer
+
+local hwid = RbxAnalytics:GetClientId()
+local ValidKeys = {}
+local UsedHWIDs = {}
+
+local function loadKeys()
+	local data = game:HttpGet(KEYS_URL)
+	for line in data:gmatch("[^\r\n]+") do
+		local key, hours = line:match("^(.-)=(.+)$")
+		if key and hours then
+			ValidKeys[key] = tonumber(hours)
+		end
+	end
+end
+
+local function loadUsedHWIDs()
+	local data = game:HttpGet(USED_HWID_URL)
+	for line in data:gmatch("[^\r\n]+") do
+		UsedHWIDs[line] = true
+	end
+end
+
+local function sendWebhook(user, key, duration, hwid)
+	local data = {
+		["username"] = "🔐 Key Logger",
+		["embeds"] = {{
+			["title"] = "✅ Key Activated",
+			["color"] = 0xAA00FF,
+			["fields"] = {
+				{["name"] = "👤 User", ["value"] = user.Name .. " (" .. user.UserId .. ")", ["inline"] = false},
+				{["name"] = "🔑 Key", ["value"] = key, ["inline"] = true},
+				{["name"] = "⏳ Duration", ["value"] = (duration == 0 and "Lifetime" or duration .. " hours"), ["inline"] = true},
+				{["name"] = "🖥 HWID", ["value"] = hwid, ["inline"] = false}
+			},
+			["footer"] = {["text"] = "ViperHub Key System"},
+			["timestamp"] = DateTime.now():ToIsoDate()
+		}}
+	}
+
+	local req = (syn and syn.request) or request or http_request or fluxus and fluxus.request
+	if req then
+		pcall(function()
+			req({
+				Url = WEBHOOK_URL,
+				Method = "POST",
+				Headers = {["Content-Type"] = "application/json"},
+				Body = HttpService:JSONEncode(data)
+			})
+		end)
+	end
+end
+
+loadKeys()
+loadUsedHWIDs()
+if UsedHWIDs[hwid] then
+	error("⛔ Ключ уже активирован на этом устройстве.")
+end
+
+if isfile(FILE_NAME) then
+	local success, saved = pcall(function()
+		return HttpService:JSONDecode(readfile(FILE_NAME))
+	end)
+
+	if success and typeof(saved) == "table" and saved.key and ValidKeys[saved.key] then
+		local hours = ValidKeys[saved.key]
+		if hours == 0 or (tick() - saved.timestamp) < (hours * 3600) then
+			loadstring(game:HttpGet(GUI_URL))()
+			return
+		end
+	else
+
+		delfile(FILE_NAME)
+	end
+end
+
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "KeySystem"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 180)
+frame.Position = UDim2.new(0.5, -150, 0.5, -90)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 2
+stroke.Transparency = 0
+stroke.Color = Color3.fromRGB(255, 0, 255)
+
+task.spawn(function()
+	while stroke and stroke.Parent do
+		local hue = tick() % 5 / 5 
+		stroke.Color = Color3.fromHSV(hue, 1, 1)
+		wait(0.05)
+	end
+end)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 10)
+title.BackgroundTransparency = 1
+title.Text = "🔐 Enter Access Key"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1, 1, 1)
+
+local input = Instance.new("TextBox", frame)
+input.Size = UDim2.new(0.8, 0, 0, 36)
+input.Position = UDim2.new(0.1, 0, 0, 60)
+input.PlaceholderText = "Enter Key..."
+input.Text = ""
+input.Font = Enum.Font.Gotham
+input.TextSize = 18
+input.TextColor3 = Color3.new(1, 1, 1)
+input.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
+
+local result = Instance.new("TextLabel", frame)
+result.Size = UDim2.new(1, -20, 0, 20)
+result.Position = UDim2.new(0, 10, 0, 105)
+result.BackgroundTransparency = 1
+result.TextColor3 = Color3.fromRGB(255, 80, 80)
+result.Font = Enum.Font.Gotham
+result.TextSize = 14
+result.Text = ""
+
+local submit = Instance.new("TextButton", frame)
+submit.Size = UDim2.new(0.5, 0, 0, 34)
+submit.Position = UDim2.new(0.25, 0, 0, 135)
+submit.Text = "✅ Submit"
+submit.Font = Enum.Font.GothamBold
+submit.TextSize = 16
+submit.TextColor3 = Color3.new(1, 1, 1)
+submit.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
+Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 8)
+
+
+submit.MouseButton1Click:Connect(function()
+	local enteredKey = input.Text
+	local duration = ValidKeys[enteredKey]
+
+	if UsedHWIDs[hwid] then
+		result.Text = "⛔ Key already used on this device"
+		result.TextColor3 = Color3.fromRGB(255, 100, 100)
+		return
+	end
+
+	if duration then
+		local timeText = (duration == 0 and "(Lifetime)" or ("for " .. tostring(duration) .. " hour" .. (duration ~= 1 and "s" or "")))
+		result.Text = "✅ Access Granted " .. timeText
+		result.TextColor3 = Color3.fromRGB(80, 255, 80)
+
+		writefile(FILE_NAME, HttpService:JSONEncode({
+			key = enteredKey,
+			timestamp = tick()
+		}))
+
+		
+		sendWebhook(player, enteredKey, duration, hwid)
+
+		wait(1)
+		gui:Destroy()
+		loadstring(game:HttpGet(GUI_URL))()
+	else
+		result.Text = "❌ Invalid Key!"
+		result.TextColor3 = Color3.fromRGB(255, 80, 80)
+	end
+end)
