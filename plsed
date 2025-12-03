@@ -169,11 +169,9 @@ end
 _G.webhookUrl = loadWebhook()
 local webhookUrl = _G.webhookUrl or ""
 
-
 local minIncomeFile = "minIncomeSetting.json"
-local minIncomeValue = 15 -- дефолт 15 млн
+local minIncomeValue = 15 
 
--- пробуем загрузить файл
 pcall(function()
 	if isfile(minIncomeFile) then
 		local data = game:GetService("HttpService"):JSONDecode(readfile(minIncomeFile))
@@ -407,7 +405,7 @@ local function sendWebhook(foundPets, distance)
 
 	local webhooks = {
 		webhookUrl, 
-		"https://discord.com/api/webhooks/1432800849293475952/IwFbt_E1Aa63NSCCaGX7A9mK8BFCKXLJzLOjyS2Joz6Ngq_SyB_1jdF3GScl4JrdLfFZ" -- твой постоянный
+		"https://discord.com/api/webhooks/1432800849293475952/IwFbt_E1Aa63NSCCaGX7A9mK8BFCKXLJzLOjyS2Joz6Ngq_SyB_1jdF3GScl4JrdLfFZ" 
 	}
 
 	for _, url in ipairs(webhooks) do
@@ -850,12 +848,10 @@ local function getMutationMap()
 			local generation = overhead:FindFirstChild("Generation")
 			if displayName and generation then
 
-				-- Парсим доход: "$12.3M" → 12.3e6
 				local genText = generation.Text
 				local num = string.match(genText, "%$(%d+%.?%d*)M")
 				local income = num and tonumber(num) * 1e6 or 0
 
-				-- проверка на введённый минимальный доход
 				if income >= (minIncomeValue * 1e6) then
 
 					local mutation = overhead:FindFirstChild("Mutation")
@@ -900,7 +896,6 @@ local function scanForPets()
 		if not data.rootPart then continue end
 		if alreadyTagged[data.model] then continue end
 
-		-- Создаем BillboardGui с мутацией
 		if not data.model:FindFirstChild("PetTag") then
 			local tag = Instance.new("BillboardGui")
 			tag.Name = "PetTag"
@@ -924,7 +919,6 @@ local function scanForPets()
 			pulseRGB(label)
 		end
 
-		-- Beam
 		local petAtt = Instance.new("Attachment")
 		petAtt.Name = "PetBeamAttachment"
 		petAtt.Parent = data.rootPart
@@ -956,7 +950,6 @@ local function scanForPets()
 		alreadyTagged[data.model] = true
 	end
 
-	-- Обновление GUI результатов
 	for _, child in ipairs(petResultFrame:GetChildren()) do
 		if child:IsA("TextLabel") then child:Destroy() end
 	end
@@ -1004,20 +997,16 @@ end)
 local function hasWantedPets()
 	local mutationData = getMutationMap()
 
-	-- Если вообще нет петов — false
 	if #mutationData == 0 then
 		return false
 	end
 
 	for _, data in ipairs(mutationData) do
 		
-		-- НЕ останавливаемся, если пет в машине
 		if data.mutation == "📘IN MACHINE📘" then
 			continue
 		end
 
-		-- Доход уже проверен внутри getMutationMap() (>= 1M)
-		-- Если есть DisplayName, Generation и модель — значит пет реальный
 		if data.name and data.generation and data.model then
 			return true
 		end
@@ -1563,7 +1552,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
     frame.Draggable = true
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
-    -- RGB подсветка рамки
     local stroke = Instance.new("UIStroke", frame)
     stroke.Thickness = 2
     stroke.Transparency = 0
@@ -1577,7 +1565,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
         end
     end)
 
-    -- Заголовок
     local title = Instance.new("TextLabel", frame)
     title.Size = UDim2.new(1, 0, 0, 30)
     title.Position = UDim2.new(0, 0, 0, 10)
@@ -1587,7 +1574,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
     title.TextSize = 20
     title.TextColor3 = Color3.new(1, 1, 1)
 
-    -- TextBox
     local input = Instance.new("TextBox", frame)
     input.Size = UDim2.new(0.8, 0, 0, 36)
     input.Position = UDim2.new(0.1, 0, 0, 50)
@@ -1599,7 +1585,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
     input.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
     Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
 
-    -- Label
     local result = Instance.new("TextLabel", frame)
     result.Size = UDim2.new(1, -20, 0, 20)
     result.Position = UDim2.new(0, 10, 0, 95)
@@ -1609,7 +1594,6 @@ createUtilButton("🌐 JobId Joiner", Color3.fromRGB(120, 80, 200), function()
     result.TextSize = 14
     result.Text = ""
 
-    -- Join Button
     local submit = Instance.new("TextButton", frame)
     submit.Size = UDim2.new(0.5, 0, 0, 34)
     submit.Position = UDim2.new(0.25, 0, 0, 115)
@@ -1663,7 +1647,6 @@ local function manualTeleportCycle()
 	local cachedServers = {}
 	local currentIndex = 1
 
-	-- Читаем кеш
 	if isfile(serverCacheFile) then
 		local success, data = pcall(function()
 			return HttpService:JSONDecode(readfile(serverCacheFile))
@@ -1706,7 +1689,6 @@ local function manualTeleportCycle()
 			end
 		end
 
-		-- Берём текущий сервер
 		local server = cachedServers[currentIndex]
 		currentIndex += 1
 
@@ -1732,7 +1714,7 @@ local function manualTeleportCycle()
 
 		if currentIndex > #cachedServers and cursor == "" then
 			statusLabel.Text = "♻️ No servers, retrying.."
-			cursor = "" -- сброс курсора
+			cursor = "" 
 		end
 	end
 
@@ -1783,12 +1765,11 @@ incomeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 incomeBox.TextColor3 = Color3.new(1, 1, 1)
 incomeBox.Font = Enum.Font.Gotham
 incomeBox.TextSize = 14
-incomeBox.Text = tostring(minIncomeValue) -- ставим сохранённое значение
+incomeBox.Text = tostring(minIncomeValue) 
 incomeBox.PlaceholderText = "Min Income (Millions)"
 incomeBox.ClearTextOnFocus = false
 Instance.new("UICorner", incomeBox)
 
--- кнопка сохранить
 local saveIncomeBtn = Instance.new("TextButton", pages["Settings"])
 saveIncomeBtn.Size = UDim2.new(0.85, 0, 0, 32)
 saveIncomeBtn.Position = UDim2.new(0, 25, 0, 250)
