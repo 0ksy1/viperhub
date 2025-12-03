@@ -124,7 +124,7 @@ local playedSoundOnce = false
 local petBeams = {}
 
 local sound = Instance.new("Sound")
-sound.SoundId = "rbxassetid://115047431910518"
+sound.SoundId = "rbxassetid://18273515163"
 sound.Volume = 1
 sound.Name = "FoundPetSound"
 sound.Parent = game:GetService("SoundService") 
