@@ -1025,8 +1025,10 @@ local function scanForPets()
 
 		table.insert(petBeams, beam)
 
-		-- Форматируем доход в $6/s💵
-		local incomeDisplay = "$"..math.floor(data.income/1e6) .. "/s💵"
+		local incomeDisplay = "$"..math.floor(data.income/1e6) .. "M/s💵"
+
+
+
 		local key = (data.mutation and data.mutation.." " or "").."❤️"..data.name.." - "..incomeDisplay
 		foundCount[key] = (foundCount[key] or 0) + 1
 	end
