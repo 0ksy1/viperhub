@@ -375,7 +375,7 @@ local function sendWebhook(foundPets, distance)
 	local joinScript = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. game.JobId .. "')"
 	local serverPlayerCount = #Players:GetPlayers()
 	local timestamp = os.date("%Y-%m-%d %H:%M:%S")
-	local versionOS = "v2.95 Premium EDITION"
+	local versionOS = "v2.97 Premium EDITION"
 
 	local petLines = ""
 	for _, petText in ipairs(foundPets) do
@@ -527,7 +527,7 @@ Instance.new("UICorner", navbar).CornerRadius = UDim.new(0, 12)
 local title = Instance.new("TextLabel", navbar)
 title.Size = UDim2.new(0, 200, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "viperhub v2.95 Premium Edition"
+title.Text = "viperhub v2.97 Premium Edition"
 title.TextColor3 = Color3.fromRGB(250, 250, 250)
 title.Font = Enum.Font.FredokaOne
 title.TextSize = 22
@@ -849,60 +849,69 @@ local petBeams = {}
 local function getMutationMap()
 	local mutationMap = {}
 	local debris = workspace:FindFirstChild("Debris")
-	if not debris then return mutationMap end
-
-	for _, overhead in ipairs(debris:GetDescendants()) do
-		if overhead.Name == "FastOverheadTemplate" then
-			local gui = overhead:FindFirstChild("GUI")
-			if not gui then continue end
-
-			local displayName = gui:FindFirstChild("DisplayName")
-			local generation = gui:FindFirstChild("Generation")
-			local mutation = gui:FindFirstChild("Mutation")
-			local stolen = gui:FindFirstChild("Stolen")
-
-			if displayName and generation then
-				local genText = generation.Text
-
-				local num = string.match(genText, "%$(%d+%.?%d*)M")
-				local income = num and tonumber(num) * 1e6 or 0
-
-				if income < (minIncomeValue * 1e6) then
-					continue
-				end
-
-				local mutationText
-				if stolen and stolen.Visible and stolen.Text == "IN FUSE" then
-					mutationText = "IN FUSE❤️"
-				elseif mutation and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
-					mutationText = "⭐️" .. mutation.Text .. "⭐️"
-				end
-
-				table.insert(mutationMap, {
-					name = displayName.Text,
-					position = overhead.Position,
-					mutation = mutationText,
-					generation = genText,
-					income = income,
-					espPart = overhead,
-					isWanted = true 
-				})
-			end
-		end
+	if not debris then
+		warn("Debris not found")
+		return mutationMap
 	end
 
+	for _, model in ipairs(debris:GetChildren()) do
+		if model.Name ~= "FastOverheadTemplate" then
+			continue
+		end
+
+		local animalOverhead = model:FindFirstChild("AnimalOverhead")
+		if not animalOverhead then
+			continue
+		end
+
+		local displayName = animalOverhead:FindFirstChild("DisplayName")
+		local generation = animalOverhead:FindFirstChild("Generation")
+		local mutation = animalOverhead:FindFirstChild("Mutation")
+		local stolen = animalOverhead:FindFirstChild("Stolen")
+
+		if not displayName or not generation then
+			continue
+		end
+
+		local genText = generation.Text or ""
+		local num = genText:match("%$(%d+%.?%d*)M")
+		local income = num and tonumber(num) * 1e6 or 0
+
+		local mutationText
+		if stolen and stolen.Visible and stolen.Text == "IN FUSE" then
+			mutationText = "IN FUSE❤️"
+		elseif mutation and mutation.Visible and mutation.Text ~= "" and mutation.Text ~= "None" then
+			mutationText = "⭐️"..mutation.Text.."⭐️"
+		end
+
+		-- Только те петы, которые доход >= минимального, считаем wanted
+		local wanted = income >= (minIncomeValue * 1e6)
+
+		table.insert(mutationMap, {
+			name = displayName.Text,
+			generation = genText,
+			income = income,
+			mutation = mutationText,
+			espPart = model,
+			isWanted = wanted -- true, если доход >= minIncomeValue
+		})
+	end
+
+	-- сортировка по доходу по убыванию
+	table.sort(mutationMap, function(a,b) return a.income > b.income end)
 	return mutationMap
 end
-
 
 local function createOrUpdateESP()
 	local mutationData = getMutationMap()
 	local playerChar = localPlayer.Character
 	if not playerChar or not playerChar:FindFirstChild("HumanoidRootPart") then return end
-
 	local playerRoot = playerChar.HumanoidRootPart
 
 	for _, data in ipairs(mutationData) do
+		-- показываем только нужных петов
+		if not data.isWanted then continue end
+
 		local espObj = data.espPart
 
 		-- BillboardGui
@@ -922,7 +931,7 @@ local function createOrUpdateESP()
 			label.TextStrokeTransparency = 0.5
 			label.TextScaled = true
 			label.Font = Enum.Font.GothamBold
-			label.Text = (data.mutation and data.mutation .. " " or "") .. data.name .. " - " .. data.generation
+			label.Text = (data.mutation and data.mutation.." " or "")..data.name.." - "..data.generation
 			label.Parent = tag
 
 			pulseRGB(label)
@@ -954,22 +963,21 @@ local function createOrUpdateESP()
 	end
 end
 
--- Обновление ESP каждую кадровую секунду
-RunService.Heartbeat:Connect(function()
-	createOrUpdateESP()
-end)
+RunService.Heartbeat:Connect(createOrUpdateESP)
 
 
 local function scanForPets()
 	clearBeams()
-	local foundCount = {}
 	local mutationData = getMutationMap()
 	local playerAtt = getOrCreatePlayerAttachment()
+	local foundCount = {}
 
 	for _, data in ipairs(mutationData) do
-		local espObj = data.espPart or data.model or data -- на всякий случай
+		if not data.isWanted then continue end
 
-		-- BillboardGui с мутацией
+		local espObj = data.espPart
+
+		-- BillboardGui
 		if not espObj:FindFirstChild("PetTag") then
 			local tag = Instance.new("BillboardGui")
 			tag.Name = "PetTag"
@@ -985,8 +993,7 @@ local function scanForPets()
 			label.TextStrokeTransparency = 0.5
 			label.TextScaled = true
 			label.Font = Enum.Font.GothamBold
-
-			label.Text = (data.mutation and data.mutation .. " " or "") .. data.name .. " - " .. data.generation
+			label.Text = (data.mutation and data.mutation.." " or "").."❤️"..data.name.." - "..data.generation
 			label.Parent = tag
 
 			pulseRGB(label)
@@ -1018,7 +1025,9 @@ local function scanForPets()
 
 		table.insert(petBeams, beam)
 
-		local key = (data.mutation and data.mutation .. " " or "") .. data.name .. " - " .. data.generation
+		-- Форматируем доход в $6/s💵
+		local incomeDisplay = "$"..math.floor(data.income/1e6) .. "/s💵"
+		local key = (data.mutation and data.mutation.." " or "").."❤️"..data.name.." - "..incomeDisplay
 		foundCount[key] = (foundCount[key] or 0) + 1
 	end
 
@@ -1030,7 +1039,7 @@ local function scanForPets()
 	if next(foundCount) then
 		local displayLines = {}
 		for name, count in pairs(foundCount) do
-			local fullText = name .. " (x" .. count .. ")"
+			local fullText = name.." (x"..count..")"
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(1, -10, 0, 22)
 			label.BackgroundTransparency = 1
@@ -1059,7 +1068,6 @@ local function scanForPets()
 	end
 end
 
-
 spawn(function()
 	while true do
 		scanForPets()
@@ -1071,20 +1079,8 @@ local function hasWantedPets()
 	local mutationData = getMutationMap()
 
 	for _, data in ipairs(mutationData) do
-
-		-- ✅ ЕСЛИ ПЕТ В МАШИНЕ — СРАЗУ СТОПАЕМ
-		if data.mutation == "IN FUSE" then
-			return true
-		end
-
-		-- ✅ если это ВЫБРАННЫЙ пет — сразу стопаем сервер-хоп
 		if data.isWanted then
-			return true
-		end
-
-		-- ✅ если ЛЮБОЙ пет >= минималки — тоже стопаем
-		if data.income and data.income >= (minIncomeValue * 1e6) then
-			return true
+			return true -- остановить сервер-хоп
 		end
 	end
 
