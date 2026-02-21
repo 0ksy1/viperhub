@@ -190,6 +190,7 @@ local ALLOWED_PETS = {
 	["Meta Technetta"] = true,
 	["Cupitron Consoletron"] = true,
 	["Divine Block"] = true,
+	["Freezeti Cobretti"] = true,
 	["Infinity Block"] = true
 }
 
