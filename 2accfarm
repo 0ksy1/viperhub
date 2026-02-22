@@ -123,7 +123,7 @@ task.spawn(function()
             tradeActive = true
             print("📦 Trade menu detected, waiting 6 seconds...")
 
-            task.wait(6)
+            task.wait(5)
 
             -- цикл перебора от 0 до 9
             task.spawn(function()
@@ -138,9 +138,12 @@ task.spawn(function()
                         pcall(function()
                             readyRemote:FireServer(unpack(args))
                         end)
-
-                        task.wait(0.2)
+                        task.wait(0.1)
                     end
+                    if tradeMenu.Visible then
+                        task.wait(8.5)
+                    end
+
                 end
 
                 tradeActive = false
