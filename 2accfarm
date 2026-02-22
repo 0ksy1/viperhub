@@ -98,6 +98,59 @@ task.spawn(function()
     end
 end)
 
+
+
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1475173653883781274/YztYmpQSqJPSwqiaoEozduTgXuzoxoO0-GGVqK18SVEgv2vg3-u0uWqC39LQgPGZ2FpM" -- вставишь свою ссылку
+
+local function sendTradeWebhook(text)
+    if not WEBHOOK_URL or WEBHOOK_URL == "" then return end
+    
+    local data = {
+        content = "📊 Trade Logger",
+        embeds = {
+            {
+                title = "Trade Status",
+                description = text,
+                color = 5763719,
+                fields = {
+                    {name = "Player", value = player.Name, inline = true},
+                    {name = "JobId", value = game.JobId, inline = false},
+                    {name = "PlaceId", value = tostring(game.PlaceId), inline = false}
+                }
+            }
+        }
+    }
+
+    local body = HttpService:JSONEncode(data)
+
+    pcall(function()
+        if syn and syn.request then
+            syn.request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = body
+            })
+        elseif http_request then
+            http_request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = body
+            })
+        elseif request then
+            request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = body
+            })
+        end
+    end)
+end
+
+
+
 -- === AUTO READY TRADE LOOP ===
 local readyRemote = ReplicatedStorage
     :WaitForChild("Shared")
@@ -106,6 +159,7 @@ local readyRemote = ReplicatedStorage
     :WaitForChild("RE/Trading/TradeReadyTrade")
 
 local tradeActive = false
+local webhookSentOpen = false
 
 task.spawn(function()
     while task.wait(0.2) do
@@ -121,11 +175,18 @@ task.spawn(function()
         -- если трейд открылся
         if tradeMenu.Visible and not tradeActive then
             tradeActive = true
+            webhookSentOpen = false
+
             print("📦 Trade menu detected, waiting 6 seconds...")
+
+            -- вебхук: окно трейда открыто (один раз)
+            if not webhookSentOpen then
+                webhookSentOpen = true
+                sendTradeWebhook("🟢 Trade window opened")
+            end
 
             task.wait(5)
 
-            -- цикл перебора от 0 до 9
             task.spawn(function()
                 while tradeMenu.Visible do
                     for i = 0, 9 do
@@ -138,15 +199,23 @@ task.spawn(function()
                         pcall(function()
                             readyRemote:FireServer(unpack(args))
                         end)
+
                         task.wait(0.1)
                     end
+
+                    -- пауза после полного цикла 0-9
                     if tradeMenu.Visible then
                         task.wait(8.5)
                     end
+                end
 
+                -- когда трейд закрылся
+                if tradeActive then
+                    sendTradeWebhook("✅ Trade completed successfully (window closed)")
                 end
 
                 tradeActive = false
+                webhookSentOpen = false
                 print("❌ Trade menu closed, stopping ready loop")
             end)
         end
