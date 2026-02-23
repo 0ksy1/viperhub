@@ -111,7 +111,7 @@ local function collectRange(baseId, fromSlot, toSlot)
         pcall(function()
             remote:InvokeServer("Pick Up Brainrot", baseId, tostring(slot))
         end)
-        task.wait(0.2)
+        task.wait(0.01)
     end
 end
 
@@ -149,27 +149,26 @@ function startAutoFarm()
 
         local baseId = myBase.Name
 
-        tweenTo(hrp, CFrame.new(center + Vector3.new(0, 3, 0)), 1.5)
-        task.wait(1)
+        tweenTo(hrp, CFrame.new(center + Vector3.new(0, 3, 0)), 0.5)
+        task.wait(0.2)
 
         collectRange(baseId, 1, 10)
 
-        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
-        task.wait(0.5)
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 0.5)
+        task.wait(0.2)
 
         collectRange(baseId, 11, 20)
 
-        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
-        task.wait(0.5)
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 0.5)
+        task.wait(0.2)
 
         collectRange(baseId, 21, 30)
 
-        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
-        task.wait(0.5)
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 0.5)
+        task.wait(0.2)
 
         collectRange(baseId, 31, 40)
 
-        -- 🔥 СИГНАЛ ЧТО ФАРМ ЗАКОНЧЕН
         finished:Fire()
     end)
 
