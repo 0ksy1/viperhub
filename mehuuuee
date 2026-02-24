@@ -52,7 +52,7 @@ local function sendServerId()
         print("✅ Server ID sent!")
         print("Response:", response.Body)
     else
-        warn("❌ Failed to send:", response)
+        warn("❌", response)
     end
 end
 
@@ -135,14 +135,12 @@ function startAutoFarm()
         end
 
         if not myBase then
-            warn("Base not found")
             finished:Fire()
             return
         end
 
         local center = getBaseCenter(myBase)
         if not center then
-            warn("Base center not found")
             finished:Fire()
             return
         end
@@ -464,7 +462,6 @@ local function startAutoAddPetsLoop()
 					local pets = getTargetPets()
 
 					if #pets == 0 then
-						warn("Target pets not found")
 						task.wait(1)
 						continue
 					end
@@ -652,9 +649,8 @@ task.spawn(function()
 	if success and result then
 		tradeRemote = result
 		remoteLoaded = true
-		warn("Trade Remote Loaded Successfully")
 	else
-		warn("Trade Remote NOT FOUND")
+		warn("x")
 	end
 end)
 
