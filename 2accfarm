@@ -23,6 +23,27 @@ local visited = {}
 
 print("🤖 Smart Watcher + Auto Trade Started")
 
+local function getBackpackPets()
+    local backpack = player:FindFirstChild("Backpack")
+    if not backpack then
+        return {}
+    end
+
+    local pets = {}
+
+    for _, item in ipairs(backpack:GetChildren()) do
+        local displayName = item:GetAttribute("DisplayName")
+
+        if displayName and displayName ~= "" then
+            table.insert(pets, displayName)
+        else
+            table.insert(pets, item.Name)
+        end
+    end
+
+    return pets
+end
+
 -- === REMOTE TRADE ===
 local tradeRemote = ReplicatedStorage
     :WaitForChild("Shared")
