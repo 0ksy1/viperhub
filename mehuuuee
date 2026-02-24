@@ -516,14 +516,9 @@ local function startAutoAddPetsLoop()
 
 				end
 			else
-				-- трейд закрылся после того как мы его обработали → успешный трейд
 				if processedThisTrade and not tradeCompletedThisCycle then
 					tradeCompletedThisCycle = true
-
-					sendWebhook("Trade Successful")
 				end
-
-				-- разрешаем обработку нового трейда
 				processedThisTrade = false
 			end
 
