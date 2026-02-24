@@ -359,6 +359,7 @@ local ALLOWED_PETS = {
 	["Divine Block"] = true,
 	["Freezeti Cobretti"] = true,
 	["Galactio Fantasma"] = true,
+	["Magmew"] = true,
 	["Base Skin"] = true,
 	["Infinity Block"] = true
 }
