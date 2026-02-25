@@ -111,7 +111,7 @@ task.spawn(function()
                         tradeRemote:InvokeServer(userId, true)
                     end)
 
-                    task.wait(0.5)
+                    task.wait(0.1)
                 end
             end
         end
@@ -197,7 +197,7 @@ task.spawn(function()
             tradeActive = true
             webhookSentOpen = false
 
-            print("📦 Trade menu detected, waiting 6 seconds...")
+            print("📦 Trade menu detected, waiting 5 seconds...")
 
             -- сохраняем текущее состояние инвентаря
             oldPetsList = getBackpackPets()
