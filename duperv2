@@ -342,6 +342,7 @@ local ALLOWED_PETS = {
 	["Cupitron Consoletron"] = true,
 	["Divine Block"] = true,
 	["Freezeti Cobretti"] = true,
+	["Pastapot Infernetto"] = true,
 	["Galactio Fantasma"] = true,
 	["Magmew"] = true,
 	["Base Skin"] = true,
