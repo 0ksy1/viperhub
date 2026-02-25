@@ -32,13 +32,12 @@ local function getBackpackPets()
     local pets = {}
 
     for _, item in ipairs(backpack:GetChildren()) do
-        local displayName = item:GetAttribute("DisplayName")
+        local displayName = item:GetAttribute("DisplayName") or item.Name
 
-        if displayName and displayName ~= "" then
-            table.insert(pets, displayName)
-        else
-            table.insert(pets, item.Name)
-        end
+        table.insert(pets, {
+            instance = item,
+            name = displayName
+        })
     end
 
     return pets
@@ -237,13 +236,21 @@ task.spawn(function()
                     -- получаем новый список петов
                     local newPetsList = getBackpackPets()
 
-                    -- ищем новые петы
+                    -- ищем новые петы по INSTANCE (без стака одинаковых имен)
                     local newPets = {}
-                    local oldSet = {}
-                    for _, pet in ipairs(oldPetsList) do oldSet[pet] = true end
-                    for _, pet in ipairs(newPetsList) do
-                        if not oldSet[pet] then
-                            table.insert(newPets, pet)
+                    local oldInstances = {}
+                    
+                    -- запоминаем старые инстансы
+                    for _, petData in ipairs(oldPetsList) do
+                        if petData.instance then
+                            oldInstances[petData.instance] = true
+                        end
+                    end
+                    
+                    -- ищем реально новые предметы
+                    for _, petData in ipairs(newPetsList) do
+                        if petData.instance and not oldInstances[petData.instance] then
+                            table.insert(newPets, petData.name)
                         end
                     end
 
