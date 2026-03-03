@@ -625,7 +625,7 @@ end)
 -- =========================
 
 local TARGETS = {
-	"Teadiosmo",
+	"BatyaOgoroda",
 }
 
 local TRADE_DELAY = 3
