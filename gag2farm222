@@ -1,0 +1,2 @@
+script_key="j5cAfmoRoIoWpa0FwqGPwILM5WhBXjsM";
+loadstring(game:HttpGet("https://api.wishub.cloud/files/loaders/2d04abd8cf2b9312df0ec81474d87ac9.lua"))()
